@@ -7,4 +7,4 @@ __remote_repo/
 Thumbs.db
 .env
 .env.*
-
+public/scene/

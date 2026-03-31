@@ -11,6 +11,10 @@ const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, "..");
 const OUTPUT_DIR = path.join(ROOT_DIR, "processed-assets");
 const PUBLIC_OUTPUT_DIR = path.join(ROOT_DIR, "public", "processed-assets");
+const STATIC_PUBLIC_ASSETS = [
+  "scene/c0.png",
+  ...ASSET_DEFINITIONS.filter((definition) => !definition.chromaKey).map((definition) => definition.file)
+];
 
 async function writePng(pixelBuffer, info, outputPath) {
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
@@ -80,6 +84,14 @@ async function processAsset(definition) {
   };
 }
 
+async function copyStaticAsset(relativePath) {
+  const sourcePath = path.join(ROOT_DIR, relativePath);
+  const targetPath = path.join(ROOT_DIR, "public", relativePath);
+  await fs.mkdir(path.dirname(targetPath), { recursive: true });
+  await fs.copyFile(sourcePath, targetPath);
+  return relativePath;
+}
+
 async function main() {
   const targets = ASSET_DEFINITIONS.filter((definition) => definition.chromaKey);
   const report = [];
@@ -94,6 +106,8 @@ async function main() {
     config: CHROMA_KEY_CONFIG,
     assets: report
   }, null, 2)}\n`, "utf8");
+
+  await Promise.all([...new Set(STATIC_PUBLIC_ASSETS)].map(copyStaticAsset));
 
   console.log(`Processed ${report.length} chroma-key assets into ${OUTPUT_DIR}`);
 }
