@@ -1,0 +1,21 @@
+export const ASSET_DEFINITIONS = [
+  { key: "backgroundRound1", file: "scene/c.png", chromaKey: false },
+  { key: "backgroundRound2", file: "scene/c2.png", chromaKey: false },
+  { key: "backgroundRound3", file: "scene/c3.png", chromaKey: false },
+  { key: "gameOver", file: "scene/5.png", chromaKey: true },
+  { key: "rankOne", file: "scene/6.png", chromaKey: true },
+  { key: "idle", file: "character/0.png", chromaKey: true },
+  { key: "walk1", file: "character/1.png", chromaKey: true },
+  { key: "walk2", file: "character/2.png", chromaKey: true },
+  { key: "jump", file: "character/3.png", chromaKey: true },
+  { key: "damage", file: "character/4.png", chromaKey: true },
+  { key: "snack1", file: "item/01.png", chromaKey: true },
+  { key: "snack2", file: "item/02.png", chromaKey: true },
+  { key: "snack3", file: "item/03.png", chromaKey: true },
+  { key: "snack4", file: "item/04.png", chromaKey: true },
+  { key: "snack5", file: "item/05.png", chromaKey: true },
+  { key: "special1", file: "item/special_01.png", chromaKey: true },
+  { key: "danger1", file: "item/001.png", chromaKey: true },
+  { key: "danger2", file: "item/002.png", chromaKey: true },
+  { key: "danger3", file: "item/003.png", chromaKey: true }
+];

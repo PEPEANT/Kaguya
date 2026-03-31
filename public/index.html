@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title data-i18n="app.title">Kaguya Snack Rush</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E%F0%9F%8D%B0%3C/text%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+JP:wght@400;500;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body class="view-lobby">
+    <div class="orientation-gate" id="orientationGate" hidden>
+      <div class="orientation-card">
+        <p class="orientation-eyebrow" data-i18n="orientation.eyebrow">Landscape</p>
+        <h1 data-i18n="orientation.title">Rotate Your Device</h1>
+        <p data-i18n="orientation.body">On mobile, the game only plays in landscape mode.</p>
+      </div>
+    </div>
+
+    <main class="app-shell">
+      <section class="lobby-screen" id="lobbyScreen" data-mobile-panel="none">
+        <div class="lang-switcher">
+          <button class="lang-btn lang-btn--active" data-lang="ko" type="button">KO</button>
+          <button class="lang-btn" data-lang="ja" type="button">JP</button>
+          <button class="lang-btn" data-lang="en" type="button">EN</button>
+          <button id="musicToggleButton" type="button" class="lang-btn lang-btn--music" data-i18n="audio.off">Music Off</button>
+        </div>
+
+        <section class="lobby-hero">
+          <div class="lobby-copy">
+            <p class="lobby-eyebrow" data-i18n="app.brand">Kaguya</p>
+            <h1 data-i18n="app.name">Snack Rush</h1>
+            <p class="lobby-lead" data-i18n="lobby.lead">Catch falling snacks, avoid traps, and chase the highest score.</p>
+
+            <form id="startForm" class="start-form">
+              <input
+                id="nicknameInput"
+                name="nickname"
+                type="text"
+                maxlength="12"
+                autocomplete="nickname"
+                placeholder="Nickname"
+                data-i18n="lobby.nickname"
+                data-i18n-attr="placeholder"
+              >
+              <button id="startButton" type="submit" disabled data-i18n="lobby.start">Start Game</button>
+            </form>
+
+            <div class="lobby-mobile-actions">
+              <button id="openGuideButton" type="button" class="ghost-button lobby-mobile-button" data-i18n="lobby.mobileGuide">Items</button>
+              <button id="openRankingButton" type="button" class="ghost-button lobby-mobile-button" data-i18n="lobby.mobileRanking">Ranking</button>
+            </div>
+          </div>
+
+          <div class="lobby-preview">
+            <article class="preview-card preview-card--round3">
+              <span class="preview-badge" data-i18n="preview.round3.badge">Round 3</span>
+              <strong data-i18n="preview.round3.title">Ranking Match</strong>
+              <p data-i18n="preview.round3.desc">Whoever catches the most takes first place.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="lobby-panels">
+          <section class="guide-panel">
+            <div class="section-head">
+              <div class="section-head-main">
+                <button id="guideBackButton" type="button" class="panel-back-button" data-i18n="lobby.mobileBack">Back</button>
+                <h2 data-i18n="guide.title">Items</h2>
+              </div>
+              <p data-i18n="guide.lead">Grab snacks and avoid traps.</p>
+            </div>
+
+            <div class="guide-columns">
+              <div class="guide-group">
+                <h3 data-i18n="guide.group.snack">Snacks</h3>
+                <div class="guide-cards">
+                  <article class="guide-card">
+                    <img class="guide-thumb" data-guide-item="snack2" alt="Snack 2">
+                    <strong data-i18n="item.snack2">Strawberry Pancake</strong>
+                    <span class="guide-points">+32</span>
+                  </article>
+                  <article class="guide-card">
+                    <img class="guide-thumb" data-guide-item="snack3" alt="Snack 3">
+                    <strong data-i18n="item.snack3">Fried Rice</strong>
+                    <span class="guide-points">+26</span>
+                  </article>
+                  <article class="guide-card">
+                    <img class="guide-thumb" data-guide-item="snack5" alt="Snack 5">
+                    <strong data-i18n="item.snack5">Omurice</strong>
+                    <span class="guide-points">+24</span>
+                  </article>
+                  <article class="guide-card">
+                    <img class="guide-thumb" data-guide-item="snack1" alt="Snack 1">
+                    <strong data-i18n="item.snack1">Strawberry Cake</strong>
+                    <span class="guide-points">+18</span>
+                  </article>
+                  <article class="guide-card">
+                    <img class="guide-thumb" data-guide-item="snack4" alt="Snack 4">
+                    <strong data-i18n="item.snack4">Blue Soda</strong>
+                    <span class="guide-points">+14</span>
+                  </article>
+                </div>
+              </div>
+
+              <div class="guide-group guide-group--special">
+                <h3 data-i18n="guide.group.special">Special</h3>
+                <div class="guide-cards">
+                  <article class="guide-card">
+                    <img class="guide-thumb" data-guide-item="special1" alt="Special 1">
+                    <strong data-i18n="item.special1">Full Moon</strong>
+                    <span class="guide-points guide-points--special" data-i18n="item.special1.effect">+14s</span>
+                  </article>
+                </div>
+              </div>
+
+              <div class="guide-group guide-group--danger">
+                <h3 data-i18n="guide.group.trap">Traps</h3>
+                <div class="guide-cards">
+                  <article class="guide-card">
+                    <img class="guide-thumb" data-guide-item="danger1" alt="Trap 1">
+                    <strong data-i18n="item.danger1">Moon Agent</strong>
+                    <span class="guide-points guide-points--danger">-32</span>
+                  </article>
+                  <article class="guide-card">
+                    <img class="guide-thumb" data-guide-item="danger3" alt="Trap 3">
+                    <strong data-i18n="item.danger3">Mikado</strong>
+                    <span class="guide-points guide-points--danger">-26</span>
+                  </article>
+                  <article class="guide-card">
+                    <img class="guide-thumb" data-guide-item="danger2" alt="Trap 2">
+                    <strong data-i18n="item.danger2">Watery Pancake</strong>
+                    <span class="guide-points guide-points--danger">-20</span>
+                  </article>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="ranking-card">
+            <div class="ranking-head">
+              <div class="section-head-main">
+                <button id="rankingBackButton" type="button" class="panel-back-button" data-i18n="lobby.mobileBack">Back</button>
+                <h2 data-i18n="ranking.title">Live Ranking</h2>
+              </div>
+              <button id="refreshRankingButton" type="button" class="ghost-button" data-i18n="ranking.refresh">Refresh</button>
+            </div>
+            <p class="ranking-status" id="rankingStatus" data-i18n="ranking.loading">Loading...</p>
+            <ol class="ranking-list" id="rankingList"></ol>
+          </section>
+        </section>
+      </section>
+
+      <section class="game-screen" id="gameScreen" hidden>
+        <div class="game-screen-inner">
+          <div class="game-frame game-frame--play">
+            <canvas
+              id="gameCanvas"
+              width="1280"
+              height="720"
+              aria-label="Kaguya Snack Rush game screen"
+              data-i18n="canvas.aria"
+              data-i18n-attr="aria-label"
+            ></canvas>
+
+            <div class="overlay result-overlay" id="gameOverlay" hidden>
+              <div class="overlay-card overlay-card--result">
+                <p class="overlay-eyebrow" id="overlayEyebrow">Result</p>
+                <h1 id="overlayTitle" data-i18n="result.title">Game Over</h1>
+                <p class="result-notice" id="resultNotice" hidden></p>
+
+                <div class="result-block">
+                  <div class="result-stat">
+                    <span data-i18n="result.score">Score</span>
+                    <strong id="finalScoreValue">0</strong>
+                  </div>
+                  <div class="result-stat">
+                    <span data-i18n="result.rank">Rank</span>
+                    <strong id="finalRankValue">-</strong>
+                  </div>
+                </div>
+
+                <div class="result-actions">
+                  <button id="restartButton" type="button" class="solid-button" data-i18n="result.restart">Restart</button>
+                  <button id="lobbyButton" type="button" class="ghost-button" data-i18n="result.lobby">Lobby</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="mobile-controls" id="mobileControls" hidden>
+              <div class="mobile-move-pad">
+                <button id="moveLeftButton" type="button" class="mobile-button" data-i18n="mobile.left">Left</button>
+                <button id="moveRightButton" type="button" class="mobile-button" data-i18n="mobile.right">Right</button>
+              </div>
+              <button id="jumpButton" type="button" class="mobile-button mobile-button--jump" data-i18n="mobile.jump">Jump</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./app-config.js"></script>
+    <script type="module" src="./game.js"></script>
+  </body>
+</html>
