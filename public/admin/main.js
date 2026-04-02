@@ -21,17 +21,17 @@ const CURRENT_SEASON_META = getRankingSeasonConfig(CURRENT_SEASON);
 const RANKING_SEASONS = getAvailableRankingSeasons().sort((left, right) => right.id - left.id);
 
 const PERIOD_DEFINITIONS = [
-  { key: "daily", label: "Today", days: 1, dayOffset: 0 },
-  { key: "weekly", label: "Last 7 days", days: 7, dayOffset: 6 },
-  { key: "monthly", label: "Last 30 days", days: 30, dayOffset: 29 }
+  { key: "daily", label: "오늘", days: 1, dayOffset: 0 },
+  { key: "weekly", label: "최근 7일", days: 7, dayOffset: 6 },
+  { key: "monthly", label: "최근 30일", days: 30, dayOffset: 29 }
 ];
 
 const PHASE_LABELS = {
-  ready: "Ready",
-  loading: "Loading",
-  playing: "Playing",
-  submitting: "Submitting",
-  error: "Error"
+  ready: "대기",
+  loading: "로딩",
+  playing: "플레이 중",
+  submitting: "제출 중",
+  error: "오류"
 };
 
 const elements = {
@@ -158,7 +158,7 @@ async function runAdminActionRequest(action, payload) {
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data.ok) {
-    throw new Error(formatText(data.error, `Admin request failed (${response.status})`));
+    throw new Error(formatText(data.error, `관리자 요청 실패 (${response.status})`));
   }
 
   return data.result;
@@ -266,20 +266,20 @@ function formatAgo(value) {
 
   const seconds = Math.max(0, Math.round((Date.now() - date.getTime()) / 1000));
   if (seconds < 60) {
-    return `${seconds}s ago`;
+    return `${seconds}초 전`;
   }
 
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) {
-    return `${minutes}m ago`;
+    return `${minutes}분 전`;
   }
 
   const hours = Math.floor(minutes / 60);
   if (hours < 24) {
-    return `${hours}h ago`;
+    return `${hours}시간 전`;
   }
 
-  return `${Math.floor(hours / 24)}d ago`;
+  return `${Math.floor(hours / 24)}일 전`;
 }
 
 function compareRankings(left, right) {
@@ -305,8 +305,8 @@ function renderAccessGate({ title, body }) {
         </div>
         <p class="admin-access-copy">${escapeHtml(body)}</p>
         <div class="admin-access-actions">
-          <a class="refresh-button" href="${escapeHtml(getGameEntryUrl().toString())}">Open Game</a>
-          <button class="refresh-button refresh-button--secondary" type="button" id="retryAdminAccess">Retry</button>
+          <a class="refresh-button" href="${escapeHtml(getGameEntryUrl().toString())}">게임 열기</a>
+          <button class="refresh-button refresh-button--secondary" type="button" id="retryAdminAccess">다시 시도</button>
         </div>
       </section>
     </main>
@@ -326,20 +326,20 @@ async function requireAuthorizedAdmin() {
 
   if (!user?.uid) {
     renderAccessGate({
-      title: "Admin sign-in required",
-      body: "Sign in with an admin account in the main game first, then reopen this page. Use the same address for both pages, such as localhost on both tabs instead of mixing localhost and 127.0.0.1."
+      title: "관리자 로그인 필요",
+      body: "먼저 메인 게임에서 관리자 계정으로 로그인한 뒤 이 페이지를 다시 열어주세요. localhost와 127.0.0.1을 섞지 말고 같은 주소로 접속하는 것이 안전합니다."
     });
-    throw new Error("Admin login required.");
+    throw new Error("관리자 로그인이 필요합니다.");
   }
 
   if (!isAuthorizedAdmin(user)) {
     renderAccessGate({
-      title: "Access denied",
+      title: "접근 권한 없음",
       body: adminAccessConfig.allowedEmails.length
-        ? `The signed-in account (${normalizeEmail(user.email)}) is not in the admin allowlist.`
-        : "Set ADMIN_ALLOWED_EMAILS on the app server, then sign in again."
+        ? `현재 로그인한 계정(${normalizeEmail(user.email)})은 관리자 허용 목록에 없습니다.`
+        : "앱 서버의 ADMIN_ALLOWED_EMAILS 설정 후 다시 로그인해주세요."
     });
-    throw new Error("Admin allowlist rejected the current user.");
+    throw new Error("관리자 허용 목록에서 거부되었습니다.");
   }
 
   return user;
@@ -367,11 +367,11 @@ function createPlayerDetailModal() {
     <section class="player-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="playerDetailTitle">
       <div class="player-detail-header">
         <div>
-          <p class="player-detail-eyebrow">Player Lookup</p>
-          <h2 id="playerDetailTitle">Player detail</h2>
-          <p id="playerDetailSubtitle" class="player-detail-subtitle">Select a player to inspect live and seasonal records.</p>
+          <p class="player-detail-eyebrow">플레이어 조회</p>
+          <h2 id="playerDetailTitle">플레이어 상세</h2>
+          <p id="playerDetailSubtitle" class="player-detail-subtitle">플레이어를 선택하면 실시간 상태와 시즌 기록을 확인할 수 있습니다.</p>
         </div>
-        <button type="button" class="player-detail-close" data-player-modal-close aria-label="Close player detail">Close</button>
+        <button type="button" class="player-detail-close" data-player-modal-close aria-label="플레이어 상세 닫기">닫기</button>
       </div>
       <div id="playerDetailBody" class="player-detail-body"></div>
     </section>
@@ -430,12 +430,12 @@ function closePlayerDetailModal() {
 
 function renderPlayerLoadingState(name) {
   openPlayerDetailModalShell({
-    title: formatText(name, "Player detail"),
-    subtitle: "Loading live and seasonal records...",
+    title: formatText(name, "플레이어 상세"),
+    subtitle: "실시간 상태와 시즌 기록을 불러오는 중입니다.",
     bodyHtml: `
       <div class="player-detail-empty">
-        <strong>Loading player detail...</strong>
-        <p>Collecting ranking and presence data for this player.</p>
+        <strong>플레이어 정보를 불러오는 중입니다...</strong>
+        <p>랭킹과 접속 기록을 수집하고 있습니다.</p>
       </div>
     `
   });
@@ -443,12 +443,12 @@ function renderPlayerLoadingState(name) {
 
 function renderPlayerErrorState(name, error) {
   openPlayerDetailModalShell({
-    title: formatText(name, "Player detail"),
-    subtitle: "Could not load the requested player record.",
+    title: formatText(name, "플레이어 상세"),
+    subtitle: "요청한 플레이어 정보를 불러오지 못했습니다.",
     bodyHtml: `
       <div class="player-detail-empty">
-        <strong>Player detail unavailable</strong>
-        <p>${escapeHtml(formatText(error?.message, "Unknown error"))}</p>
+        <strong>플레이어 상세 정보를 표시할 수 없습니다.</strong>
+        <p>${escapeHtml(formatText(error?.message, "알 수 없는 오류"))}</p>
       </div>
     `
   });
@@ -555,7 +555,7 @@ async function buildPlayerLookupDetail(entry) {
         }
       }
     } catch (error) {
-      console.warn("Admin player lookup could not read users collection.", error);
+      console.warn("관리자 플레이어 조회에서 users 컬렉션을 읽지 못했습니다.", error);
     }
   }
 
@@ -574,8 +574,8 @@ function renderSeasonHistoryRows(seasonRows) {
   if (!seasonRows.length) {
     return `
       <div class="player-detail-empty">
-        <strong>No season ranking history</strong>
-        <p>No matching ranking entries were found across the configured seasons.</p>
+        <strong>시즌 랭킹 기록이 없습니다.</strong>
+        <p>설정된 시즌들에서 일치하는 랭킹 기록을 찾지 못했습니다.</p>
       </div>
     `;
   }
@@ -585,10 +585,10 @@ function renderSeasonHistoryRows(seasonRows) {
       <table>
         <thead>
           <tr>
-            <th>Season</th>
-            <th>Score</th>
-            <th>Rank</th>
-            <th>Submitted</th>
+            <th>시즌</th>
+            <th>점수</th>
+            <th>순위</th>
+            <th>기록 시간</th>
           </tr>
         </thead>
         <tbody>
@@ -620,41 +620,41 @@ function renderPlayerDetail(entry, detail) {
   });
 
   const identityRows = [
-    { label: "Player ID", value: formatText(detail.playerId) },
-    { label: "User ID", value: formatText(detail.uid) },
-    { label: "Known names", value: formatList(detail.knownNicknames) },
-    { label: "Current profile name", value: formatText(accountSummary?.currentNickname) },
-    { label: "Linked player IDs", value: formatList(accountSummary?.linkedPlayerIds) },
-    { label: "Last seen player ID", value: formatText(accountSummary?.lastSeenPlayerId) }
+    { label: "플레이어 ID", value: formatText(detail.playerId) },
+    { label: "유저 UID", value: formatText(detail.uid) },
+    { label: "확인된 닉네임", value: formatList(detail.knownNicknames) },
+    { label: "현재 프로필 닉네임", value: formatText(accountSummary?.currentNickname) },
+    { label: "연결된 플레이어 ID", value: formatList(accountSummary?.linkedPlayerIds) },
+    { label: "최근 접속 플레이어 ID", value: formatText(accountSummary?.lastSeenPlayerId) }
   ];
 
   const liveRows = [
-    { label: "Source", value: formatText(entry.sourceLabel) },
-    { label: "Live phase", value: formatPhaseLabel(latestPresence?.phase || entry.phase || "") },
-    { label: "Last seen", value: formatDateTime(latestPresence?.lastSeen || entry.lastSeen || "") },
-    { label: "30-day sessions", value: formatNumber(sessionStats.totalSessions) },
-    { label: "Latest session start", value: formatDateTime(sessionStats.latestStartedAt) },
-    { label: "Latest session end", value: formatDateTime(sessionStats.latestEndedAt) }
+    { label: "조회 출처", value: formatText(entry.sourceLabel) },
+    { label: "현재 상태", value: formatPhaseLabel(latestPresence?.phase || entry.phase || "") },
+    { label: "최근 갱신", value: formatDateTime(latestPresence?.lastSeen || entry.lastSeen || "") },
+    { label: "최근 30일 세션 수", value: formatNumber(sessionStats.totalSessions) },
+    { label: "최근 세션 시작", value: formatDateTime(sessionStats.latestStartedAt) },
+    { label: "최근 세션 종료", value: formatDateTime(sessionStats.latestEndedAt) }
   ];
 
   openPlayerDetailModalShell({
-    title: formatText(entry.name || entry.nickname, "Player detail"),
-    subtitle: "Read-only admin lookup for ranking, presence, and seasonal history.",
+    title: formatText(entry.name || entry.nickname, "플레이어 상세"),
+    subtitle: "랭킹, 접속 현황, 시즌 기록을 조회합니다.",
     bodyHtml: `
       <section class="player-detail-section">
-        <h3>Identity</h3>
+        <h3>식별 정보</h3>
         <dl class="player-detail-meta-grid">
           ${renderMetaRows(identityRows)}
         </dl>
       </section>
       <section class="player-detail-section">
-        <h3>Live status</h3>
+        <h3>실시간 상태</h3>
         <dl class="player-detail-meta-grid">
           ${renderMetaRows(liveRows)}
         </dl>
       </section>
       <section class="player-detail-section">
-        <h3>Season history</h3>
+        <h3>시즌 기록</h3>
         ${renderSeasonHistoryRows(detail.seasonRows)}
       </section>
     `
@@ -668,7 +668,7 @@ async function openPlayerDetail(entry) {
     const detail = await buildPlayerLookupDetail(entry);
     renderPlayerDetail(entry, detail);
   } catch (error) {
-    console.error("Failed to load player detail.", error);
+    console.error("플레이어 상세 정보를 불러오지 못했습니다.", error);
     renderPlayerErrorState(entry.name || entry.nickname, error);
   }
 }
@@ -687,12 +687,12 @@ function extractLookupEntryFromEvent(event) {
 
   if (source === "ranking") {
     const entry = adminState.rankings[index];
-    return entry ? { ...entry, sourceLabel: "Ranking table" } : null;
+    return entry ? { ...entry, sourceLabel: "랭킹 표" } : null;
   }
 
   if (source === "presence") {
     const entry = adminState.activePresence[index];
-    return entry ? { ...entry, sourceLabel: "Presence table", name: entry.nickname } : null;
+    return entry ? { ...entry, sourceLabel: "접속자 표", name: entry.nickname } : null;
   }
 
   return null;
@@ -719,7 +719,7 @@ function renderEmptyRow(tbody, columns, message) {
 
 function renderRankings(rankings) {
   if (!rankings.length) {
-    renderEmptyRow(elements.rankingTableBody, 4, "No rankings yet.");
+    renderEmptyRow(elements.rankingTableBody, 4, "아직 랭킹이 없습니다.");
     return;
   }
 
@@ -742,7 +742,7 @@ function renderRankings(rankings) {
 
 function renderPresence(entries) {
   if (!entries.length) {
-    renderEmptyRow(elements.presenceTableBody, 3, "No active players.");
+    renderEmptyRow(elements.presenceTableBody, 3, "현재 접속 중인 플레이어가 없습니다.");
     return;
   }
 
@@ -754,7 +754,7 @@ function renderPresence(entries) {
           class="player-link-button"
           data-player-source="presence"
           data-player-index="${index}"
-        >${escapeHtml(entry.nickname || "Unknown")}</button>
+        >${escapeHtml(entry.nickname || "알 수 없음")}</button>
       </td>
       <td><span class="phase-pill">${escapeHtml(formatPhaseLabel(entry.phase))}</span></td>
       <td>${formatAgo(entry.lastSeen)}</td>
@@ -771,7 +771,7 @@ function setTrafficCard(periodKey, stats) {
   }
 
   uniqueElement.textContent = formatNumber(stats.uniquePlayers);
-  metaElement.textContent = `${formatNumber(stats.totalSessions)} sessions`;
+  metaElement.textContent = `${formatNumber(stats.totalSessions)}회 세션`;
 }
 
 function resetTrafficCards() {
@@ -784,7 +784,7 @@ function resetTrafficCards() {
     }
 
     if (metaElement) {
-      metaElement.textContent = "No data";
+      metaElement.textContent = "데이터 없음";
     }
   });
 }
@@ -820,7 +820,7 @@ function toSessionEntry(entryDoc) {
   return {
     sessionId: entryDoc.id,
     playerId: String(data.playerId || ""),
-    nickname: normalizeName(data.nickname) || "Player",
+    nickname: normalizeName(data.nickname) || "플레이어",
     phase: String(data.phase || "ready"),
     startedAt: typeof data.startedAt === "string" ? data.startedAt : "",
     endedAt: typeof data.endedAt === "string" ? data.endedAt : "",
@@ -917,8 +917,8 @@ function setupChartTooltip() {
 
     tooltip.innerHTML = `
       <strong>${escapeHtml(hit.entry.dayKey)}</strong><br>
-      Visitors ${formatNumber(hit.entry.uniquePlayers)}<br>
-      Sessions ${formatNumber(hit.entry.totalSessions)}
+      순 방문자 ${formatNumber(hit.entry.uniquePlayers)}<br>
+      세션 ${formatNumber(hit.entry.totalSessions)}
     `;
     tooltip.style.left = `${Math.max(4, hit.x)}px`;
     tooltip.style.right = "auto";
@@ -987,25 +987,25 @@ function renderAnalytics(sessionEntries) {
   periodStats.forEach((stats) => setTrafficCard(stats.key, stats));
   renderTrendChart(dailyStats);
   elements.trendChartStatus.textContent = sessionEntries.length
-    ? `Based on ${formatNumber(sessionEntries.length)} recent sessions`
-    : "No recent session data";
+    ? `최근 세션 ${formatNumber(sessionEntries.length)}개 기준`
+    : "최근 세션 데이터 없음";
 }
 
 function applyRankingFailure() {
-  renderEmptyRow(elements.rankingTableBody, 4, "Could not load rankings.");
+  renderEmptyRow(elements.rankingTableBody, 4, "랭킹을 불러오지 못했습니다.");
   elements.rankingCount.textContent = "-";
-  elements.rankingStatus.textContent = "Load failed";
+  elements.rankingStatus.textContent = "불러오기 실패";
 }
 
 function applyPresenceFailure() {
-  renderEmptyRow(elements.presenceTableBody, 3, "Could not load live presence.");
+  renderEmptyRow(elements.presenceTableBody, 3, "실시간 접속 현황을 불러오지 못했습니다.");
   elements.activeCount.textContent = "-";
-  elements.presenceStatus.textContent = "Load failed";
+  elements.presenceStatus.textContent = "불러오기 실패";
 }
 
 function applyAnalyticsFailure() {
   resetTrafficCards();
-  elements.trendChartStatus.textContent = "Load failed";
+  elements.trendChartStatus.textContent = "불러오기 실패";
 }
 
 async function fetchAllRankings() {
@@ -1040,7 +1040,7 @@ async function fetchActivePresence() {
     const data = entryDoc.data();
     return {
       playerId: String(data.playerId || ""),
-      nickname: normalizeName(data.nickname) || "Player",
+      nickname: normalizeName(data.nickname) || "플레이어",
       phase: String(data.phase || "ready"),
       page: String(data.page || ""),
       lastSeen: typeof data.lastSeen === "string" ? data.lastSeen : ""
@@ -1070,11 +1070,11 @@ async function handleSeasonPayoutAction({ apply }) {
   const seasonLabel = getSelectedPayoutSeasonLabel();
 
   if (targetUid && !playerId) {
-    throw new Error("Force target UID requires a playerId filter.");
+    throw new Error("강제 대상 UID를 쓰려면 플레이어 ID 필터가 필요합니다.");
   }
 
-  setInlineStatus(elements.seasonPayoutStatus, apply ? "Applying payout..." : "Loading payout preview...");
-  setResultBox(elements.seasonPayoutResult, "Working...");
+  setInlineStatus(elements.seasonPayoutStatus, apply ? "보상을 지급하는 중..." : "보상 미리보기를 불러오는 중...");
+  setResultBox(elements.seasonPayoutResult, "처리 중...");
 
   const result = await runAdminActionRequest(apply ? "season-payout-apply" : "season-payout-preview", {
     season,
@@ -1087,8 +1087,8 @@ async function handleSeasonPayoutAction({ apply }) {
   setInlineStatus(
     elements.seasonPayoutStatus,
     apply
-      ? `${formatText(seasonLabel)} payout applied. ${formatNumber(result.processedEntries)} entries processed.`
-      : `${formatText(seasonLabel)} payout preview ready. ${formatNumber(result.eligibleEntries)} eligible entries.`,
+      ? `${formatText(seasonLabel)} 보상 지급 완료. ${formatNumber(result.processedEntries)}명 처리됨.`
+      : `${formatText(seasonLabel)} 보상 미리보기 완료. ${formatNumber(result.eligibleEntries)}명 대상.`,
     "success"
   );
   setResultBox(elements.seasonPayoutResult, result);
@@ -1106,19 +1106,19 @@ async function handleWalletAdjustAction() {
   const body = readTrimmedValue(elements.walletAdjustBody);
 
   if (!uid) {
-    throw new Error("Target UID is required.");
+    throw new Error("대상 UID가 필요합니다.");
   }
 
   if (!delta) {
-    throw new Error("Delta must not be zero.");
+    throw new Error("증감값은 0일 수 없습니다.");
   }
 
   if (!reason) {
-    throw new Error("Reason is required.");
+    throw new Error("사유를 입력해주세요.");
   }
 
-  setInlineStatus(elements.playerActionStatus, "Applying wallet change...");
-  setResultBox(elements.playerActionResult, "Working...");
+  setInlineStatus(elements.playerActionStatus, "후쥬 잔액을 조정하는 중...");
+  setResultBox(elements.playerActionResult, "처리 중...");
 
   const result = await runAdminActionRequest("adjust-wallet", {
     uid,
@@ -1128,10 +1128,10 @@ async function handleWalletAdjustAction() {
     body,
     apply: true,
     season: getSelectedPayoutSeason(),
-    seasonLabel: "Admin"
+    seasonLabel: "관리자"
   });
 
-  setInlineStatus(elements.playerActionStatus, `Wallet updated for ${uid}.`, "success");
+  setInlineStatus(elements.playerActionStatus, `${uid} 후쥬 잔액 조정 완료.`, "success");
   setResultBox(elements.playerActionResult, result);
 }
 
@@ -1142,15 +1142,15 @@ async function handleSendMessageAction() {
   const body = readTrimmedValue(elements.sendMessageBody);
 
   if (!uid) {
-    throw new Error("Target UID is required.");
+    throw new Error("대상 UID가 필요합니다.");
   }
 
   if (!title || !body) {
-    throw new Error("Title and body are required.");
+    throw new Error("제목과 본문을 입력해주세요.");
   }
 
-  setInlineStatus(elements.playerActionStatus, "Sending inbox message...");
-  setResultBox(elements.playerActionResult, "Working...");
+  setInlineStatus(elements.playerActionStatus, "메시지를 보내는 중...");
+  setResultBox(elements.playerActionResult, "처리 중...");
 
   const result = await runAdminActionRequest("send-message", {
     uid,
@@ -1159,11 +1159,11 @@ async function handleSendMessageAction() {
     body,
     apply: true,
     season: getSelectedPayoutSeason(),
-    seasonLabel: "Admin",
+    seasonLabel: "관리자",
     claimed: true
   });
 
-  setInlineStatus(elements.playerActionStatus, `Message sent to ${uid}.`, "success");
+  setInlineStatus(elements.playerActionStatus, `${uid}에게 메시지 전송 완료.`, "success");
   setResultBox(elements.playerActionResult, result);
 }
 
@@ -1172,15 +1172,15 @@ async function handleDeleteMessageAction() {
   const messageId = readTrimmedValue(elements.deleteMessageId);
 
   if (!uid) {
-    throw new Error("Target UID is required.");
+    throw new Error("대상 UID가 필요합니다.");
   }
 
   if (!messageId) {
-    throw new Error("Message ID is required.");
+    throw new Error("메시지 ID가 필요합니다.");
   }
 
-  setInlineStatus(elements.playerActionStatus, "Deleting inbox message...");
-  setResultBox(elements.playerActionResult, "Working...");
+  setInlineStatus(elements.playerActionStatus, "메시지를 삭제하는 중...");
+  setResultBox(elements.playerActionResult, "처리 중...");
 
   const result = await runAdminActionRequest("delete-message", {
     uid,
@@ -1188,7 +1188,7 @@ async function handleDeleteMessageAction() {
     apply: true
   });
 
-  setInlineStatus(elements.playerActionStatus, `Message ${messageId} deleted for ${uid}.`, "success");
+  setInlineStatus(elements.playerActionStatus, `${uid}의 메시지 ${messageId} 삭제 완료.`, "success");
   setResultBox(elements.playerActionResult, result);
 }
 
@@ -1198,14 +1198,14 @@ function bindAdminOperationControls() {
       await handleSeasonPayoutAction({ apply: false });
     } catch (error) {
       console.error(error);
-      setInlineStatus(elements.seasonPayoutStatus, formatText(error?.message, "Payout preview failed."), "error");
-      setResultBox(elements.seasonPayoutResult, formatText(error?.message, "Payout preview failed."));
+      setInlineStatus(elements.seasonPayoutStatus, formatText(error?.message, "보상 미리보기에 실패했습니다."), "error");
+      setResultBox(elements.seasonPayoutResult, formatText(error?.message, "보상 미리보기에 실패했습니다."));
     }
   });
 
   elements.seasonPayoutApplyButton?.addEventListener("click", async () => {
     const seasonLabel = getSelectedPayoutSeasonLabel();
-    if (!window.confirm(`${seasonLabel} payout will update balances and inbox messages. Continue?`)) {
+    if (!window.confirm(`${seasonLabel} 보상을 실제 지급합니다. 잔액과 메시지함이 함께 갱신됩니다. 계속할까요?`)) {
       return;
     }
 
@@ -1213,8 +1213,8 @@ function bindAdminOperationControls() {
       await handleSeasonPayoutAction({ apply: true });
     } catch (error) {
       console.error(error);
-      setInlineStatus(elements.seasonPayoutStatus, formatText(error?.message, "Payout apply failed."), "error");
-      setResultBox(elements.seasonPayoutResult, formatText(error?.message, "Payout apply failed."));
+      setInlineStatus(elements.seasonPayoutStatus, formatText(error?.message, "보상 지급에 실패했습니다."), "error");
+      setResultBox(elements.seasonPayoutResult, formatText(error?.message, "보상 지급에 실패했습니다."));
     }
   });
 
@@ -1223,8 +1223,8 @@ function bindAdminOperationControls() {
       await handleWalletAdjustAction();
     } catch (error) {
       console.error(error);
-      setInlineStatus(elements.playerActionStatus, formatText(error?.message, "Wallet update failed."), "error");
-      setResultBox(elements.playerActionResult, formatText(error?.message, "Wallet update failed."));
+      setInlineStatus(elements.playerActionStatus, formatText(error?.message, "후쥬 잔액 조정에 실패했습니다."), "error");
+      setResultBox(elements.playerActionResult, formatText(error?.message, "후쥬 잔액 조정에 실패했습니다."));
     }
   });
 
@@ -1233,15 +1233,15 @@ function bindAdminOperationControls() {
       await handleSendMessageAction();
     } catch (error) {
       console.error(error);
-      setInlineStatus(elements.playerActionStatus, formatText(error?.message, "Message send failed."), "error");
-      setResultBox(elements.playerActionResult, formatText(error?.message, "Message send failed."));
+      setInlineStatus(elements.playerActionStatus, formatText(error?.message, "메시지 전송에 실패했습니다."), "error");
+      setResultBox(elements.playerActionResult, formatText(error?.message, "메시지 전송에 실패했습니다."));
     }
   });
 
   elements.deleteMessageApplyButton?.addEventListener("click", async () => {
     const uid = readTrimmedValue(elements.deleteMessageUid);
     const messageId = readTrimmedValue(elements.deleteMessageId);
-    if (!window.confirm(`Delete message ${messageId || "(empty)"} for ${uid || "(empty)"}?`)) {
+    if (!window.confirm(`${uid || "(비어 있음)"} 계정의 메시지 ${messageId || "(비어 있음)"}를 삭제할까요?`)) {
       return;
     }
 
@@ -1249,17 +1249,17 @@ function bindAdminOperationControls() {
       await handleDeleteMessageAction();
     } catch (error) {
       console.error(error);
-      setInlineStatus(elements.playerActionStatus, formatText(error?.message, "Message delete failed."), "error");
-      setResultBox(elements.playerActionResult, formatText(error?.message, "Message delete failed."));
+      setInlineStatus(elements.playerActionStatus, formatText(error?.message, "메시지 삭제에 실패했습니다."), "error");
+      setResultBox(elements.playerActionResult, formatText(error?.message, "메시지 삭제에 실패했습니다."));
     }
   });
 }
 
 async function refreshAdminData() {
   elements.refreshButton.disabled = true;
-  elements.presenceStatus.textContent = "Loading...";
-  elements.rankingStatus.textContent = "Loading...";
-  elements.trendChartStatus.textContent = "Loading...";
+  elements.presenceStatus.textContent = "불러오는 중...";
+  elements.rankingStatus.textContent = "불러오는 중...";
+  elements.trendChartStatus.textContent = "불러오는 중...";
 
   const [rankingsResult, presenceResult, sessionsResult] = await Promise.allSettled([
     fetchAllRankings(),
@@ -1272,7 +1272,7 @@ async function refreshAdminData() {
     adminState.rankings = rankings;
     renderRankings(rankings);
     elements.rankingCount.textContent = formatNumber(rankings.length);
-    elements.rankingStatus.textContent = `${CURRENT_SEASON_META.displayName} / ${formatNumber(rankings.length)} records`;
+    elements.rankingStatus.textContent = `${CURRENT_SEASON_META.displayName} / ${formatNumber(rankings.length)}개 기록`;
   } else {
     console.error(rankingsResult.reason);
     adminState.rankings = [];
@@ -1284,7 +1284,7 @@ async function refreshAdminData() {
     adminState.activePresence = activeEntries;
     renderPresence(activeEntries);
     elements.activeCount.textContent = formatNumber(activeEntries.length);
-    elements.presenceStatus.textContent = activeEntries.length ? "Estimated live presence" : "No active presence";
+    elements.presenceStatus.textContent = activeEntries.length ? "실시간 접속 추정치" : "현재 접속 없음";
   } else {
     console.error(presenceResult.reason);
     adminState.activePresence = [];
@@ -1308,7 +1308,7 @@ async function bootstrapAdminDashboard() {
   try {
     await requireAuthorizedAdmin();
   } catch (error) {
-    console.warn("Admin dashboard access blocked.", error);
+    console.warn("관리자 대시보드 접근이 차단되었습니다.", error);
     return;
   }
 

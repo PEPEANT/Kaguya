@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Kaguya Admin</title>
+    <title>카구야 관리자</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -13,45 +13,45 @@
     <main class="admin-shell">
       <header class="admin-header">
         <div>
-          <p class="admin-eyebrow">Admin</p>
-          <h1>Kaguya Snack Rush Admin</h1>
+          <p class="admin-eyebrow">관리자</p>
+          <h1>카구야 스낵 러쉬 관리자</h1>
         </div>
         <div class="admin-header-actions">
-          <p class="admin-updated">Updated: <span id="lastUpdated">-</span></p>
-          <button id="refreshButton" type="button" class="refresh-button">Refresh</button>
+          <p class="admin-updated">갱신: <span id="lastUpdated">-</span></p>
+          <button id="refreshButton" type="button" class="refresh-button">새로고침</button>
         </div>
       </header>
 
       <section class="admin-stats">
         <article class="stat-card">
-          <span>Active now</span>
+          <span>현재 접속</span>
           <strong id="activeCount">-</strong>
         </article>
         <article class="stat-card">
-          <span>Daily unique</span>
+          <span>일간 순 방문자</span>
           <strong id="dailyUnique">-</strong>
-          <small id="dailyVisitsMeta" class="stat-meta">No data</small>
+          <small id="dailyVisitsMeta" class="stat-meta">데이터 없음</small>
         </article>
         <article class="stat-card">
-          <span>Weekly unique</span>
+          <span>주간 순 방문자</span>
           <strong id="weeklyUnique">-</strong>
-          <small id="weeklyVisitsMeta" class="stat-meta">No data</small>
+          <small id="weeklyVisitsMeta" class="stat-meta">데이터 없음</small>
         </article>
         <article class="stat-card">
-          <span>Monthly unique</span>
+          <span>월간 순 방문자</span>
           <strong id="monthlyUnique">-</strong>
-          <small id="monthlyVisitsMeta" class="stat-meta">No data</small>
+          <small id="monthlyVisitsMeta" class="stat-meta">데이터 없음</small>
         </article>
         <article class="stat-card">
-          <span>Total rankings</span>
+          <span>전체 랭킹 수</span>
           <strong id="rankingCount">-</strong>
         </article>
       </section>
 
       <section class="panel-card">
         <div class="panel-head">
-          <h2>Recent 30-Day Traffic</h2>
-          <p id="trendChartStatus">Loading...</p>
+          <h2>최근 30일 방문자 추이</h2>
+          <p id="trendChartStatus">불러오는 중...</p>
         </div>
         <div class="chart-wrap">
           <canvas id="trendChart"></canvas>
@@ -62,121 +62,121 @@
       <section class="admin-ops-grid">
         <section class="panel-card admin-ops-card">
           <div class="panel-head">
-            <h2>Season Reward Payout</h2>
-            <p>Preview and apply season rewards from the ranking table.</p>
+            <h2>시즌 보상 지급</h2>
+            <p>랭킹 기준으로 보상을 미리보기하고 실제 지급할 수 있습니다.</p>
           </div>
           <form id="seasonPayoutForm" class="admin-form-grid">
             <label class="admin-field">
-              <span>Season</span>
+              <span>시즌</span>
               <select id="seasonPayoutSeason"></select>
             </label>
             <label class="admin-field">
-              <span>Limit</span>
-              <input id="seasonPayoutLimit" type="number" min="0" step="1" placeholder="0 = all eligible">
+              <span>대상 수</span>
+              <input id="seasonPayoutLimit" type="number" min="0" step="1" placeholder="0이면 전체">
             </label>
             <label class="admin-field admin-field--wide">
-              <span>Player ID filter</span>
-              <input id="seasonPayoutPlayerId" type="text" placeholder="Optional single playerId">
+              <span>플레이어 ID 필터</span>
+              <input id="seasonPayoutPlayerId" type="text" placeholder="선택한 playerId 1명만">
             </label>
             <label class="admin-field admin-field--wide">
-              <span>Force target UID</span>
-              <input id="seasonPayoutTargetUid" type="text" placeholder="Optional uid override for one playerId">
+              <span>강제 대상 UID</span>
+              <input id="seasonPayoutTargetUid" type="text" placeholder="playerId 1명에 대해 uid 수동 지정">
             </label>
             <div class="admin-button-row admin-field--wide">
-              <button id="seasonPayoutPreviewButton" type="button" class="refresh-button refresh-button--secondary">Preview</button>
-              <button id="seasonPayoutApplyButton" type="button" class="refresh-button">Apply payout</button>
+              <button id="seasonPayoutPreviewButton" type="button" class="refresh-button refresh-button--secondary">미리보기</button>
+              <button id="seasonPayoutApplyButton" type="button" class="refresh-button">실제 지급</button>
             </div>
           </form>
-          <p id="seasonPayoutStatus" class="admin-inline-status">Ready.</p>
-          <pre id="seasonPayoutResult" class="admin-result-box">No payout preview yet.</pre>
+          <p id="seasonPayoutStatus" class="admin-inline-status">준비됨.</p>
+          <pre id="seasonPayoutResult" class="admin-result-box">아직 보상 미리보기를 실행하지 않았습니다.</pre>
         </section>
 
         <section class="panel-card admin-ops-card">
           <div class="panel-head">
-            <h2>Player Actions</h2>
-            <p>Manual inbox messages, HujuPay adjustments, and cleanup.</p>
+            <h2>플레이어 수동 작업</h2>
+            <p>메시지 발송, HujuPay 조정, 메시지 삭제를 직접 처리합니다.</p>
           </div>
           <div class="admin-ops-stack">
             <form id="walletAdjustForm" class="admin-form-grid admin-form-grid--compact">
               <label class="admin-field">
-                <span>Target UID</span>
+                <span>대상 UID</span>
                 <input id="walletAdjustUid" type="text" placeholder="uid">
               </label>
               <label class="admin-field">
-                <span>Delta</span>
-                <input id="walletAdjustDelta" type="number" step="1" placeholder="500 or -300">
+                <span>증감값</span>
+                <input id="walletAdjustDelta" type="number" step="1" placeholder="500 또는 -300">
               </label>
               <label class="admin-field admin-field--wide">
-                <span>Reason</span>
-                <input id="walletAdjustReason" type="text" placeholder="Required audit reason">
+                <span>사유</span>
+                <input id="walletAdjustReason" type="text" placeholder="필수 사유">
               </label>
               <label class="admin-field admin-field--wide">
-                <span>Optional inbox title</span>
-                <input id="walletAdjustTitle" type="text" placeholder="HujuPay updated">
+                <span>메시지 제목</span>
+                <input id="walletAdjustTitle" type="text" placeholder="후쥬페이 변동 안내">
               </label>
               <label class="admin-field admin-field--wide">
-                <span>Optional inbox body</span>
-                <textarea id="walletAdjustBody" rows="3" placeholder="Admin added 500 HujuPay..."></textarea>
+                <span>메시지 본문</span>
+                <textarea id="walletAdjustBody" rows="3" placeholder="관리자가 500 HujuPay를 지급했습니다..."></textarea>
               </label>
               <div class="admin-button-row admin-field--wide">
-                <button id="walletAdjustApplyButton" type="button" class="refresh-button">Apply wallet change</button>
+                <button id="walletAdjustApplyButton" type="button" class="refresh-button">후쥬 증감 적용</button>
               </div>
             </form>
 
             <form id="sendMessageForm" class="admin-form-grid admin-form-grid--compact">
               <label class="admin-field">
-                <span>Target UID</span>
+                <span>대상 UID</span>
                 <input id="sendMessageUid" type="text" placeholder="uid">
               </label>
               <label class="admin-field">
-                <span>Message ID</span>
-                <input id="sendMessageId" type="text" placeholder="Optional custom id">
+                <span>메시지 ID</span>
+                <input id="sendMessageId" type="text" placeholder="비워두면 자동 생성">
               </label>
               <label class="admin-field admin-field--wide">
-                <span>Title</span>
-                <input id="sendMessageTitle" type="text" placeholder="Notice title">
+                <span>제목</span>
+                <input id="sendMessageTitle" type="text" placeholder="공지 제목">
               </label>
               <label class="admin-field admin-field--wide">
-                <span>Body</span>
-                <textarea id="sendMessageBody" rows="3" placeholder="Notice body"></textarea>
+                <span>본문</span>
+                <textarea id="sendMessageBody" rows="3" placeholder="공지 내용"></textarea>
               </label>
               <div class="admin-button-row admin-field--wide">
-                <button id="sendMessageApplyButton" type="button" class="refresh-button refresh-button--secondary">Send message</button>
+                <button id="sendMessageApplyButton" type="button" class="refresh-button refresh-button--secondary">메시지 보내기</button>
               </div>
             </form>
 
             <form id="deleteMessageForm" class="admin-form-grid admin-form-grid--compact">
               <label class="admin-field">
-                <span>Target UID</span>
+                <span>대상 UID</span>
                 <input id="deleteMessageUid" type="text" placeholder="uid">
               </label>
               <label class="admin-field">
-                <span>Message ID</span>
-                <input id="deleteMessageId" type="text" placeholder="message id">
+                <span>메시지 ID</span>
+                <input id="deleteMessageId" type="text" placeholder="삭제할 message id">
               </label>
               <div class="admin-button-row admin-field--wide">
-                <button id="deleteMessageApplyButton" type="button" class="refresh-button refresh-button--danger">Delete message</button>
+                <button id="deleteMessageApplyButton" type="button" class="refresh-button refresh-button--danger">메시지 삭제</button>
               </div>
             </form>
           </div>
-          <p id="playerActionStatus" class="admin-inline-status">Ready.</p>
-          <pre id="playerActionResult" class="admin-result-box">No player action run yet.</pre>
+          <p id="playerActionStatus" class="admin-inline-status">준비됨.</p>
+          <pre id="playerActionResult" class="admin-result-box">아직 수동 작업을 실행하지 않았습니다.</pre>
         </section>
       </section>
 
       <section class="admin-grid">
         <section class="panel-card">
           <div class="panel-head">
-            <h2>Active Presence</h2>
-            <p id="presenceStatus">Loading...</p>
+            <h2>현재 접속자</h2>
+            <p id="presenceStatus">불러오는 중...</p>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Nickname</th>
-                  <th>Status</th>
-                  <th>Last seen</th>
+                  <th>닉네임</th>
+                  <th>상태</th>
+                  <th>최근 갱신</th>
                 </tr>
               </thead>
               <tbody id="presenceTableBody"></tbody>
@@ -186,17 +186,17 @@
 
         <section class="panel-card panel-card--wide">
           <div class="panel-head">
-            <h2>Ranking</h2>
-            <p id="rankingStatus">Loading...</p>
+            <h2>전체 랭킹</h2>
+            <p id="rankingStatus">불러오는 중...</p>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Nickname</th>
-                  <th>Score</th>
-                  <th>Submitted</th>
+                  <th>닉네임</th>
+                  <th>점수</th>
+                  <th>기록 시간</th>
                 </tr>
               </thead>
               <tbody id="rankingTableBody"></tbody>

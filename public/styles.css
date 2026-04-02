@@ -1734,7 +1734,7 @@ img {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 70;
   background: rgba(25, 14, 9, 0.55);
   display: grid;
   place-items: center;
@@ -2325,7 +2325,12 @@ img {
 .all-rankings-footer {
   display: flex;
   justify-content: center;
+  position: sticky;
+  bottom: 0;
   padding-top: 0.15rem;
+  padding-bottom: calc(0.2rem + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(255, 248, 240, 0), rgba(255, 248, 240, 0.96) 38%, rgba(255, 248, 240, 0.98) 100%);
+  z-index: 1;
 }
 
 .all-rankings-toggle {
@@ -2444,7 +2449,8 @@ img {
 
   #profileModal,
   #messagesModal,
-  #settingsModal {
+  #settingsModal,
+  #allRankingsModal {
     align-items: flex-end;
     padding: 0 0 calc(5.85rem + env(safe-area-inset-bottom));
     background: rgba(25, 14, 9, 0.32);
@@ -2452,16 +2458,18 @@ img {
 
   #profileModal .modal-card,
   #messagesModal .modal-card,
-  #settingsModal .modal-card {
+  #settingsModal .modal-card,
+  #allRankingsModal .modal-card {
     width: min(100%, 34rem);
     max-height: calc(100dvh - 6.7rem - env(safe-area-inset-bottom));
     border-radius: 1.45rem 1.45rem 0 0;
-    padding-bottom: 1rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   }
 
   #profileModal .modal-head .ghost-button--small,
   #messagesModal .modal-head .ghost-button--small,
-  #settingsModal .modal-head .ghost-button--small {
+  #settingsModal .modal-head .ghost-button--small,
+  #allRankingsModal .modal-head .ghost-button--small {
     display: none;
   }
 
