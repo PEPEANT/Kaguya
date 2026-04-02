@@ -2,6 +2,7 @@ import { elements } from "./dom.js";
 import { t } from "./i18n.js";
 
 const STORAGE_KEY = "music-enabled";
+const EFFECT_POOL_SIZE = 6;
 
 function createTrack(src, volume) {
   if (typeof Audio === "undefined") {
@@ -20,10 +21,20 @@ function createEffect(src, { volume = 1, playbackRate = 1 } = {}) {
     return null;
   }
 
-  const audio = new Audio(src);
-  audio.preload = "auto";
+  const template = new Audio(src);
+  template.preload = "auto";
+  const resolvedSrc = template.src || src;
+  const pool = Array.from({ length: EFFECT_POOL_SIZE }, () => {
+    const audio = new Audio(resolvedSrc);
+    audio.preload = "auto";
+    audio.load();
+    return audio;
+  });
+
   return {
-    src: audio.src || src,
+    src: resolvedSrc,
+    pool,
+    poolIndex: 0,
     volume,
     playbackRate
   };
@@ -46,11 +57,6 @@ let enabled = true;
 let desiredTrackKey = "lobby";
 let currentTrackKey = null;
 let initialized = false;
-const activeEffects = new Set();
-
-function cleanupEffect(audio) {
-  activeEffects.delete(audio);
-}
 
 function applyEffectPlayback(audio, effect) {
   audio.preload = "auto";
@@ -68,6 +74,28 @@ function applyEffectPlayback(audio, effect) {
   if ("webkitPreservesPitch" in audio) {
     audio.webkitPreservesPitch = false;
   }
+}
+
+function takeEffectAudio(effect) {
+  if (!Array.isArray(effect?.pool) || !effect.pool.length) {
+    const audio = new Audio(effect.src);
+    applyEffectPlayback(audio, effect);
+    return audio;
+  }
+
+  const availableIndex = effect.pool.findIndex((audio) => audio.paused || audio.ended);
+  const poolIndex = availableIndex >= 0 ? availableIndex : effect.poolIndex;
+  effect.poolIndex = (poolIndex + 1) % effect.pool.length;
+  const audio = effect.pool[poolIndex];
+
+  audio.pause();
+  try {
+    audio.currentTime = 0;
+  } catch {
+    // Some browsers can throw while a clip is still seeking; replay anyway.
+  }
+  applyEffectPlayback(audio, effect);
+  return audio;
 }
 
 function pauseAllTracks() {
@@ -235,13 +263,12 @@ export function playItemSoundEffect(effectKey) {
     return;
   }
 
-  const audio = new Audio(effect.src);
-  applyEffectPlayback(audio, effect);
-  audio.addEventListener("ended", () => cleanupEffect(audio), { once: true });
-  audio.addEventListener("error", () => cleanupEffect(audio), { once: true });
-  activeEffects.add(audio);
-
+  const audio = takeEffectAudio(effect);
   void audio.play().catch(() => {
-    cleanupEffect(audio);
+    try {
+      audio.load();
+    } catch {
+      // Ignore reload failures for one-shot effects.
+    }
   });
 }
