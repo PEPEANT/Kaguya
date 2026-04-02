@@ -836,6 +836,7 @@ function getActiveNickname() {
 async function isNicknameAvailable(name) {
   const payload = await checkNicknameAvailabilityFromProvider({
     playerId: state.playerId,
+    uid: state.authUser?.uid || "",
     name
   });
 

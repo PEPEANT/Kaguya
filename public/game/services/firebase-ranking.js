@@ -51,6 +51,18 @@ function compareRankings(left, right) {
   return String(left.submittedAt).localeCompare(String(right.submittedAt));
 }
 
+function pickPreferredEntry(current, candidate) {
+  if (!current) {
+    return candidate;
+  }
+
+  if (!candidate) {
+    return current;
+  }
+
+  return compareRankings(current, candidate) <= 0 ? current : candidate;
+}
+
 function sanitizeEntry(entry) {
   const nicknameSnapshot = normalizeName(entry?.nicknameSnapshot || entry?.name);
   const playerId = normalizePlayerId(entry?.playerId);
@@ -128,14 +140,45 @@ async function readAllRankings(season = getCurrentRankingSeason()) {
 async function readEntriesByName(name, season = getCurrentRankingSeason()) {
   const nameQuery = query(
     collection(getDb(), getCollectionName(season)),
-    where("name", "==", name),
-    limit(2)
+    where("name", "==", name)
   );
   const snapshot = await getDocs(nameQuery);
 
   return snapshot.docs
     .map((entryDoc) => sanitizeEntry(entryDoc.data()))
     .filter(Boolean);
+}
+
+async function readEntriesByUid(uid, season = getCurrentRankingSeason()) {
+  const safeUid = normalizeUid(uid);
+  if (!safeUid) {
+    return [];
+  }
+
+  const uidQuery = query(
+    collection(getDb(), getCollectionName(season)),
+    where("uid", "==", safeUid)
+  );
+  const snapshot = await getDocs(uidQuery);
+
+  return snapshot.docs
+    .map((entryDoc) => sanitizeEntry(entryDoc.data()))
+    .filter(Boolean)
+    .sort(compareRankings);
+}
+
+async function resolveExistingEntry({ season = getCurrentRankingSeason(), playerId, uid = "" } = {}) {
+  const safePlayerId = normalizePlayerId(playerId);
+  const safeUid = normalizeUid(uid);
+
+  const [playerEntry, uidEntries] = await Promise.all([
+    safePlayerId ? readRankingEntry(safePlayerId, season) : Promise.resolve(null),
+    safeUid ? readEntriesByUid(safeUid, season) : Promise.resolve([])
+  ]);
+
+  return [playerEntry, ...uidEntries]
+    .filter(Boolean)
+    .reduce((bestEntry, entry) => pickPreferredEntry(bestEntry, entry), null);
 }
 
 export async function fetchRankings({ season = getCurrentRankingSeason() } = {}) {
@@ -157,19 +200,36 @@ export async function fetchAllRankings({ season = getCurrentRankingSeason() } = 
   };
 }
 
-export async function checkNicknameAvailability({ season = getCurrentRankingSeason(), playerId, name }) {
+export async function checkNicknameAvailability({ season = getCurrentRankingSeason(), playerId, uid = "", name }) {
   ensureFirebaseReady();
 
   const safeSeason = resolveSeason(season);
   const safePlayerId = normalizePlayerId(playerId);
+  const safeUid = normalizeUid(uid);
   const safeName = normalizeName(name);
 
   if (!safeName) {
     return { available: false };
   }
 
+  const existingEntry = await resolveExistingEntry({
+    season: safeSeason,
+    playerId: safePlayerId,
+    uid: safeUid
+  });
   const matchedEntries = await readEntriesByName(safeName, safeSeason);
-  const conflictingEntry = matchedEntries.find((entry) => entry.playerId !== safePlayerId);
+  const allowedPlayerIds = new Set([safePlayerId, existingEntry?.playerId].filter(Boolean));
+  const conflictingEntry = matchedEntries.find((entry) => {
+    if (allowedPlayerIds.has(entry.playerId)) {
+      return false;
+    }
+
+    if (safeUid && entry.uid === safeUid) {
+      return false;
+    }
+
+    return true;
+  });
 
   return {
     available: !conflictingEntry
@@ -197,9 +257,16 @@ export async function submitScore({ season = getCurrentRankingSeason(), playerId
     throw new Error("Score is invalid.");
   }
 
-  const availability = await checkNicknameAvailability({
+  const existingEntry = await resolveExistingEntry({
     season: safeSeason,
     playerId: safePlayerId,
+    uid: safeUid
+  });
+  const resolvedPlayerId = existingEntry?.playerId || safePlayerId;
+  const availability = await checkNicknameAvailability({
+    season: safeSeason,
+    playerId: resolvedPlayerId,
+    uid: safeUid,
     name: safeName
   });
   if (!availability.available) {
@@ -207,7 +274,7 @@ export async function submitScore({ season = getCurrentRankingSeason(), playerId
   }
 
   const submittedAt = new Date().toISOString();
-  const rankingRef = doc(getDb(), getCollectionName(safeSeason), safePlayerId);
+  const rankingRef = doc(getDb(), getCollectionName(safeSeason), resolvedPlayerId);
 
   let accepted = false;
 
@@ -224,7 +291,7 @@ export async function submitScore({ season = getCurrentRankingSeason(), playerId
 
     if (!existing || safeScore > existing.score) {
       transaction.set(rankingRef, {
-        playerId: safePlayerId,
+        playerId: resolvedPlayerId,
         uid: safeUid,
         nicknameSnapshot: safeName,
         name: safeName,
@@ -237,7 +304,7 @@ export async function submitScore({ season = getCurrentRankingSeason(), playerId
 
     if (shouldRefreshMetadata) {
       transaction.set(rankingRef, {
-        playerId: safePlayerId,
+        playerId: resolvedPlayerId,
         uid: safeUid || existing.uid || "",
         nicknameSnapshot: safeName,
         name: safeName,
@@ -247,7 +314,7 @@ export async function submitScore({ season = getCurrentRankingSeason(), playerId
     }
   });
 
-  const currentEntry = await readRankingEntry(safePlayerId, safeSeason);
+  const currentEntry = await readRankingEntry(resolvedPlayerId, safeSeason);
   const allRankings = await readAllRankings(safeSeason);
   const rankings = allRankings.slice(0, MAX_RANKINGS);
 
