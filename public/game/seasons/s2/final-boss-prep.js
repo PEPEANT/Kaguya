@@ -218,9 +218,9 @@ export const FINAL_BOSS_PREP_CONFIG = Object.freeze({
     ])
   }),
   roundOverride: Object.freeze({
-    speedMin: 500,
-    speedMax: 720,
-    speedVariance: 32,
+    speedMin: 455,
+    speedMax: 660,
+    speedVariance: 28,
     driftMin: -58,
     driftMax: 58,
     spawnMin: 0.24,

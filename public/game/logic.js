@@ -552,14 +552,70 @@ function circleIntersectsRect(circle, rect) {
   return dx * dx + dy * dy <= circle.radius * circle.radius;
 }
 
-function addFloatText(text, x, y, color) {
+function addFloatText(text, x, y, color, options = {}) {
   state.floatTexts.push({
     id: crypto.randomUUID(),
     text,
     x,
     y,
     age: 0,
-    color
+    color,
+    assetKey: typeof options.assetKey === "string" ? options.assetKey : "",
+    iconSize: Math.max(0, Number(options.iconSize) || 0)
+  });
+}
+
+function showTimeBonusToast({ bonusTime = 0, label = "" } = {}) {
+  const safeBonusTime = Math.max(0, Math.floor(Number(bonusTime) || 0));
+  if (!safeBonusTime) {
+    return;
+  }
+
+  const safeLabel = String(label || "").trim();
+  state.timeBonusToastText = safeLabel
+    ? `${safeLabel} +${safeBonusTime}${t("hud.seconds")}`
+    : `+${safeBonusTime}${t("hud.seconds")}`;
+  state.timeBonusToastTimer = 1.9;
+}
+
+function canStompDangerItem(item, hitbox, itemCollisionScale, dt) {
+  const stompRewardPoints = Number(item.type?.stompRewardPoints || 0);
+  const player = state.player;
+
+  if (stompRewardPoints <= 0 || player.onGround || player.isSliding || player.velocityY <= 140) {
+    return false;
+  }
+
+  const itemRadius = item.type.radius * itemCollisionScale;
+  const playerBottom = hitbox.y + hitbox.height;
+  const previousPlayerBottom = playerBottom - player.velocityY * dt;
+  const previousItemY = item.y - item.speed * dt;
+  const hitboxCenterX = hitbox.x + hitbox.width / 2;
+  const horizontalDistance = Math.abs(hitboxCenterX - item.x);
+  const maxHorizontalDistance = hitbox.width * 0.24 + itemRadius * 0.58;
+  const stompWindowTop = previousItemY - itemRadius * 0.92;
+  const stompWindowBottom = item.y + itemRadius * 0.12;
+
+  return previousPlayerBottom <= stompWindowTop
+    && playerBottom <= stompWindowBottom
+    && horizontalDistance <= maxHorizontalDistance;
+}
+
+function applyStompReward(item) {
+  const stompRewardPoints = Math.max(0, Math.floor(Number(item.type?.stompRewardPoints) || 0));
+  if (!stompRewardPoints) {
+    return;
+  }
+
+  state.score += stompRewardPoints;
+  activateFinalBossPrep();
+  playItemSoundEffect("pickup");
+  state.shake = Math.max(state.shake, 0.12);
+  state.player.velocityY = -Math.max(420, Number(item.type?.stompBounceVelocity) || 540);
+  state.player.onGround = false;
+  addFloatText(`+${stompRewardPoints}`, item.x, item.y - item.type.size * 0.22, "#ffe7a8", {
+    assetKey: "hujupayCoin",
+    iconSize: 28
   });
 }
 
@@ -595,6 +651,7 @@ function activateFinalBossPrep() {
   state.shake = Math.max(state.shake, 0.14);
   addFloatText(t(state.roundLabelKey), PLAY_BOUNDS.left + 180, 148, "#fff4c2");
   addFloatText(`+${grantedBonusTime}${t("hud.seconds")}`, PLAY_BOUNDS.left + 190, 194, "#ffeab6");
+  showTimeBonusToast({ bonusTime: grantedBonusTime, label: t(state.roundLabelKey) });
   playBossPrepMusic();
   return true;
 }
@@ -630,6 +687,7 @@ function applyItemEffect(item) {
     state.timeLeft = Math.max(0, state.timeLimit - state.elapsed);
     state.shake = 0.16;
     addFloatText(`+${timeBonus}${t("hud.seconds")}`, item.x, item.y - item.type.size * 0.18, item.type.color);
+    showTimeBonusToast({ bonusTime: timeBonus, label: t("item.special1") });
     return;
   }
 
@@ -1007,6 +1065,11 @@ function updateItems(dt) {
     );
 
     if (collided) {
+      if (canStompDangerItem(item, hitbox, itemCollisionScale, dt)) {
+        applyStompReward(item);
+        continue;
+      }
+
       if ((item.type.damage ?? 0) > 0 && state.damageTimer > 0) {
         continue;
       }
@@ -1069,6 +1132,7 @@ function updateRoundState() {
       state.timeLimit += bonusTime;
       state.timeLeft = Math.max(0, state.timeLimit - state.elapsed);
       addFloatText(`+${bonusTime}${t("hud.seconds")}`, PLAY_BOUNDS.left + 176, 194, "#ffe7bb");
+      showTimeBonusToast({ bonusTime, label: t(state.roundLabelKey) });
     }
   }
 }
@@ -1136,6 +1200,7 @@ function updateBackgroundStageState({ allowBonus = true, forceSync = false } = {
   state.timeLeft = Math.max(0, state.timeLimit - state.elapsed);
   state.shake = Math.max(state.shake, 0.12);
   addFloatText(`+${bonusTime}${t("hud.seconds")}`, PLAY_BOUNDS.left + 176, 180, "#ffe7bb");
+  showTimeBonusToast({ bonusTime });
 }
 
 function updateFloatTexts(dt) {
@@ -1159,6 +1224,10 @@ export function updateGame(dt) {
   state.damageTimer = Math.max(0, state.damageTimer - dt);
   state.yummyTimer = Math.max(0, state.yummyTimer - dt);
   state.roundTransitionTimer = Math.max(0, state.roundTransitionTimer - dt);
+  state.timeBonusToastTimer = Math.max(0, state.timeBonusToastTimer - dt);
+  if (state.timeBonusToastTimer <= 0) {
+    state.timeBonusToastText = "";
+  }
 
   if (state.backgroundTransitionFromKey) {
     const backgroundBlendDone = state.elapsed - state.backgroundTransitionStartAt >= state.backgroundTransitionDuration;

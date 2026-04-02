@@ -60,6 +60,8 @@ export const state = {
   spawnTimer: 1.2,
   items: [],
   floatTexts: [],
+  timeBonusToastText: "",
+  timeBonusToastTimer: 0,
   rankings: [],
   lastRank: null,
   hujupayBalance: 0,
@@ -120,6 +122,8 @@ export function resetRound(name) {
   state.spawnTimer = 1.2;
   state.items = [];
   state.floatTexts = [];
+  state.timeBonusToastText = "";
+  state.timeBonusToastTimer = 0;
   state.lastRank = null;
   state.finalBossPrepTriggered = false;
   state.finalBossPrepStartedAt = Number.NEGATIVE_INFINITY;

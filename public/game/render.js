@@ -223,6 +223,41 @@ function drawTopHud() {
   drawHealthBar();
 }
 
+function drawTimeBonusToast() {
+  if (state.phase !== "playing" || state.timeBonusToastTimer <= 0 || !state.timeBonusToastText) {
+    return;
+  }
+
+  const duration = 1.9;
+  const progress = 1 - clamp(state.timeBonusToastTimer / duration, 0, 1);
+  const alpha = Math.min(1, state.timeBonusToastTimer / 0.22) * (1 - Math.max(0, progress - 0.72) / 0.28);
+  const text = state.timeBonusToastText;
+  const y = state.roundTransitionTimer > 0 ? 232 : 102;
+
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, alpha);
+  ctx.font = '800 24px "Do Hyeon", "Noto Sans KR", "Noto Sans JP", sans-serif';
+  const textWidth = ctx.measureText(text).width;
+  const width = Math.max(216, textWidth + 44);
+  const height = 42;
+  const x = VIRTUAL_WIDTH / 2 - width / 2;
+
+  ctx.fillStyle = "rgba(58, 31, 19, 0.82)";
+  roundRect(ctx, x, y, width, height, 18);
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(255, 240, 220, 0.26)";
+  ctx.lineWidth = 1;
+  roundRect(ctx, x, y, width, height, 18);
+  ctx.stroke();
+
+  ctx.fillStyle = "#fff1c8";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, VIRTUAL_WIDTH / 2, y + height / 2 + 1);
+  ctx.restore();
+}
+
 function drawSlideCooldownHud() {
   if (state.phase !== "playing" || isTouchDevice()) {
     return;
@@ -444,11 +479,18 @@ function drawItems() {
 function drawFloatTexts() {
   for (const floatText of state.floatTexts) {
     const alpha = 1 - floatText.age / 0.9;
+    const rewardIcon = floatText.assetKey ? state.assets?.[floatText.assetKey] : null;
+    const iconSize = Math.max(24, Number(floatText.iconSize) || 0);
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.font = '700 34px "Do Hyeon", "Noto Sans KR", "Noto Sans JP", sans-serif';
     ctx.textAlign = "center";
     ctx.lineWidth = 6;
+
+    if (rewardIcon) {
+      ctx.drawImage(rewardIcon, floatText.x - iconSize / 2, floatText.y - iconSize - 18, iconSize, iconSize);
+    }
+
     ctx.strokeStyle = "rgba(85, 34, 0, 0.35)";
     ctx.strokeText(floatText.text, floatText.x, floatText.y);
     ctx.fillStyle = floatText.color;
@@ -672,6 +714,7 @@ export function renderFrame() {
     drawTopHud();
     drawRoundBanner();
     drawRoundTransition();
+    drawTimeBonusToast();
   }
 
   drawScreenFlash();
