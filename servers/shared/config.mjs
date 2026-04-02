@@ -28,3 +28,13 @@ export function getRankingApiBaseUrl() {
 export function getRankingCorsOrigin() {
   return process.env.RANKING_CORS_ORIGIN || "*";
 }
+
+export function normalizeRankingSeason(input, fallback = 1) {
+  const safeSeason = Math.floor(Number(input));
+  return Number.isFinite(safeSeason) && safeSeason >= 1 ? safeSeason : fallback;
+}
+
+export function getSeasonRankingsFile(season) {
+  const safeSeason = normalizeRankingSeason(season);
+  return path.join(DATA_DIR, `rankings_season${safeSeason}.json`);
+}

@@ -102,6 +102,7 @@ img {
 
 .intro-start-form {
   width: min(100%, 28rem);
+  grid-template-columns: 1fr;
 }
 
 .intro-nickname-status {
@@ -110,6 +111,24 @@ img {
   color: #a14c1e;
   font-size: 0.88rem;
   font-weight: 700;
+}
+
+.intro-auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.intro-auth-hint,
+.intro-auth-state {
+  margin: -0.2rem 0 0;
+  color: var(--text-soft);
+  font-size: 0.88rem;
+}
+
+.intro-auth-state {
+  font-weight: 700;
+  color: var(--accent-deep);
 }
 
 .intro-title {
@@ -160,6 +179,67 @@ img {
 .lobby-player-info {
   display: grid;
   gap: 0.3rem;
+}
+
+.account-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1.15rem;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(185, 141, 102, 0.18);
+}
+
+.account-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.account-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.account-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.account-badge--guest {
+  background: rgba(0, 0, 0, 0.07);
+  color: var(--text-soft);
+}
+
+.account-badge--member {
+  background: rgba(255, 143, 69, 0.14);
+  color: var(--accent-deep);
+}
+
+.account-display {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.account-summary-text {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
 }
 
 .lobby-player-name {
@@ -793,6 +873,11 @@ img {
     width: 100%;
   }
 
+  .intro-auth-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
   .intro-side-figure {
     display: none;
   }
@@ -832,6 +917,19 @@ img {
   .start-form,
   .result-block,
   .result-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .account-card-head,
+  .account-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .account-head-actions,
+  .profile-record-stats,
+  .profile-nickname-actions {
+    display: grid;
     grid-template-columns: 1fr;
   }
 
@@ -961,4 +1059,433 @@ img {
 
 .lang-btn--music {
   min-width: 6.9rem;
+}
+
+.lang-btn--auth {
+  min-width: 4.9rem;
+}
+
+/* ── 시즌 배지 ── */
+.season-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.season-badge--current {
+  background: linear-gradient(135deg, var(--accent), #ffb65e);
+  color: #fff;
+}
+
+/* ── 전체 랭킹 모달 ── */
+.ranking-head-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ghost-button--small {
+  padding: 0.6rem 0.85rem;
+  font-size: 0.85rem;
+}
+
+.auth-reset-button {
+  width: 100%;
+}
+
+.auth-help {
+  margin: -0.15rem 0 0;
+  color: var(--text-soft);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(25, 14, 9, 0.55);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  backdrop-filter: blur(3px);
+}
+
+.modal-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 1.4rem;
+  box-shadow: var(--shadow);
+  padding: 1.4rem;
+  width: min(100%, 30rem);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  display: grid;
+  gap: 0.8rem;
+  align-content: start;
+}
+
+.auth-modal-card {
+  width: min(100%, 28rem);
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.auth-tab {
+  border: 1px solid rgba(183, 138, 102, 0.18);
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.48);
+  color: var(--text-soft);
+  font-weight: 800;
+  padding: 0.72rem 0.85rem;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.auth-tab:hover:not(.auth-tab--active) {
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--text-main);
+}
+
+.auth-tab--active {
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--text-main);
+  border-color: rgba(201, 93, 31, 0.2);
+}
+
+.auth-caption {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.auth-form {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.auth-field {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.auth-field span {
+  color: var(--text-main);
+}
+
+.auth-field input {
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(171, 117, 76, 0.28);
+  background: rgba(255, 255, 255, 0.9);
+  outline: none;
+}
+
+.auth-field input:focus {
+  border-color: rgba(255, 143, 69, 0.75);
+  box-shadow: 0 0 0 4px rgba(255, 143, 69, 0.16);
+}
+
+.auth-status {
+  margin: 0;
+  padding: 0.8rem 0.95rem;
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(185, 141, 102, 0.2);
+  color: var(--text-main);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.auth-status[data-tone="success"] {
+  background: rgba(76, 175, 80, 0.12);
+  border-color: rgba(76, 175, 80, 0.22);
+  color: #1f6d2a;
+}
+
+.auth-status[data-tone="error"] {
+  background: rgba(220, 66, 66, 0.12);
+  border-color: rgba(220, 66, 66, 0.2);
+  color: #9d2929;
+}
+
+.profile-modal-card {
+  width: min(100%, 34rem);
+}
+
+.profile-status {
+  margin: 0;
+  padding: 0.8rem 0.95rem;
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(185, 141, 102, 0.2);
+  color: var(--text-main);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.profile-status[data-tone="error"] {
+  background: rgba(220, 66, 66, 0.12);
+  border-color: rgba(220, 66, 66, 0.2);
+  color: #9d2929;
+}
+
+.profile-status[data-tone="success"] {
+  background: rgba(76, 175, 80, 0.12);
+  border-color: rgba(76, 175, 80, 0.22);
+  color: #1f6d2a;
+}
+
+.profile-summary-card,
+.profile-section {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1rem;
+  border-radius: 1.15rem;
+  background: rgba(255, 255, 255, 0.64);
+  border: 1px solid rgba(185, 141, 102, 0.18);
+}
+
+.profile-account-name {
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.profile-account-summary,
+.profile-section-subtitle {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.profile-nickname-tools {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.profile-nickname-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.profile-nickname-hint {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.profile-nickname-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.profile-section-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.profile-section h3 {
+  margin: 0;
+  font-family: "Do Hyeon", "Noto Sans KR", "Noto Sans JP", sans-serif;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.profile-record-card {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 248, 240, 0.88);
+  border: 1px solid rgba(197, 151, 114, 0.2);
+}
+
+.profile-record-card--empty {
+  color: var(--text-soft);
+  text-align: center;
+}
+
+.profile-record-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.profile-record-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.2rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffd772, #ffb548);
+  color: #6b3502;
+  font-weight: 900;
+}
+
+.profile-record-name {
+  font-size: 1rem;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.profile-record-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.profile-record-stat {
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(197, 150, 112, 0.22);
+}
+
+.profile-record-stat span {
+  display: block;
+  color: var(--text-soft);
+  font-size: 0.82rem;
+}
+
+.profile-record-stat strong {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 1rem;
+}
+
+.all-rankings-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.15rem;
+}
+
+.all-rankings-toggle {
+  min-width: min(100%, 15rem);
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.modal-head h2 {
+  margin: 0;
+  font-family: "Do Hyeon", "Noto Sans KR", "Noto Sans JP", sans-serif;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+/* ── 시즌 탭 ── */
+.season-tabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.2rem 0 0.1rem;
+}
+
+.season-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.9rem;
+  border: 1.5px solid transparent;
+  background: rgba(255, 255, 255, 0.45);
+  color: var(--text-soft);
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.season-tab:hover:not(.season-tab--active) {
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--text-main);
+}
+
+.season-tab--active {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(183, 138, 102, 0.3);
+  color: var(--text-main);
+}
+
+.season-tab-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.season-tab-pill--live {
+  background: rgba(52, 199, 89, 0.15);
+  color: #1a7a35;
+}
+
+.season-tab-pill--ended {
+  background: rgba(0, 0, 0, 0.07);
+  color: var(--text-soft);
+}
+
+/* ── 시즌1 아카이브 ── */
+.season-archive {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2.2rem 1rem;
+  text-align: center;
+}
+
+.season-archive-trophy {
+  font-size: 2.4rem;
+  line-height: 1;
+  filter: grayscale(0.25);
+}
+
+.season-archive-title {
+  font-family: "Do Hyeon", "Noto Sans KR", "Noto Sans JP", sans-serif;
+  font-size: 1.1rem;
+  color: var(--text-main);
+}
+
+.season-archive-period {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-soft);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+}
+
+.season-archive-body {
+  font-size: 0.85rem;
+  color: var(--text-soft);
+  margin-top: 0.25rem;
 }

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>카구야 관리자</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="admin-shell">
+      <header class="admin-header">
+        <div>
+          <p class="admin-eyebrow">Admin</p>
+          <h1>카구야 스낵 러쉬 관리자</h1>
+        </div>
+        <div class="admin-header-actions">
+          <p class="admin-updated">갱신: <span id="lastUpdated">-</span></p>
+          <button id="refreshButton" type="button" class="refresh-button">새로고침</button>
+        </div>
+      </header>
+
+      <section class="admin-stats">
+        <article class="stat-card">
+          <span>현재 접속</span>
+          <strong id="activeCount">-</strong>
+        </article>
+        <article class="stat-card">
+          <span>일간 순 방문자</span>
+          <strong id="dailyUnique">-</strong>
+          <small id="dailyVisitsMeta" class="stat-meta">데이터 없음</small>
+        </article>
+        <article class="stat-card">
+          <span>주간 순 방문자</span>
+          <strong id="weeklyUnique">-</strong>
+          <small id="weeklyVisitsMeta" class="stat-meta">데이터 없음</small>
+        </article>
+        <article class="stat-card">
+          <span>월간 순 방문자</span>
+          <strong id="monthlyUnique">-</strong>
+          <small id="monthlyVisitsMeta" class="stat-meta">데이터 없음</small>
+        </article>
+        <article class="stat-card">
+          <span>전체 랭킹 수</span>
+          <strong id="rankingCount">-</strong>
+        </article>
+      </section>
+
+      <section class="panel-card">
+        <div class="panel-head">
+          <h2>최근 30일 방문자 추이</h2>
+          <p id="trendChartStatus">불러오는 중...</p>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="trendChart"></canvas>
+          <div id="chartTooltip" class="chart-tooltip"></div>
+        </div>
+      </section>
+
+      <section class="admin-grid">
+        <section class="panel-card">
+          <div class="panel-head">
+            <h2>현재 접속자</h2>
+            <p id="presenceStatus">불러오는 중...</p>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>닉네임</th>
+                  <th>상태</th>
+                  <th>최근 갱신</th>
+                </tr>
+              </thead>
+              <tbody id="presenceTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel-card panel-card--wide">
+          <div class="panel-head">
+            <h2>전체 랭킹</h2>
+            <p id="rankingStatus">불러오는 중...</p>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>닉네임</th>
+                  <th>점수</th>
+                  <th>기록 시간</th>
+                </tr>
+              </thead>
+              <tbody id="rankingTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="../app-config.js"></script>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

@@ -1,7 +1,13 @@
 import { getRankingApiUrl } from "../config/runtime.js";
 
-export async function fetchRankings() {
-  const response = await fetch(getRankingApiUrl("/api/rankings"), { cache: "no-store" });
+function appendSeason(path, season) {
+  const params = new URLSearchParams();
+  params.set("season", String(season));
+  return `${path}?${params.toString()}`;
+}
+
+export async function fetchRankings({ season }) {
+  const response = await fetch(getRankingApiUrl(appendSeason("/api/rankings", season)), { cache: "no-store" });
 
   if (!response.ok) {
     throw new Error("ranking fetch failed");
@@ -10,8 +16,19 @@ export async function fetchRankings() {
   return response.json();
 }
 
-export async function checkNicknameAvailability({ playerId, name }) {
+export async function fetchAllRankings({ season }) {
+  const response = await fetch(getRankingApiUrl(appendSeason("/api/rankings/all", season)), { cache: "no-store" });
+
+  if (!response.ok) {
+    throw new Error("ranking fetch failed");
+  }
+
+  return response.json();
+}
+
+export async function checkNicknameAvailability({ season, playerId, name }) {
   const params = new URLSearchParams();
+  params.set("season", String(season));
   params.set("name", String(name || ""));
   params.set("playerId", String(playerId || ""));
 
@@ -24,13 +41,13 @@ export async function checkNicknameAvailability({ playerId, name }) {
   return response.json();
 }
 
-export async function submitScore({ playerId, name, score }) {
+export async function submitScore({ season, playerId, uid = "", name, score }) {
   const response = await fetch(getRankingApiUrl("/api/rankings"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ playerId, name, score })
+    body: JSON.stringify({ season, playerId, uid, name, score })
   });
 
   const payload = await response.json();

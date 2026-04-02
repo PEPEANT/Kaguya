@@ -26,6 +26,8 @@ export const state = {
   phase: "loading",
   playerId: "",
   nickname: "",
+  authReady: false,
+  authUser: null,
   round: 1,
   roundLabelKey: "round.1.label",
   roundTransitionKey: "round.1.transition",

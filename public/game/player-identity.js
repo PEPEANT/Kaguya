@@ -1,5 +1,10 @@
 const PLAYER_ID_STORAGE_KEY = "player-id";
 const PLAYER_NAME_STORAGE_KEY = "player-name";
+const GUEST_NICKNAME_PREFIXES = Object.freeze({
+  ko: "플레이어",
+  ja: "プレイヤー",
+  en: "Player"
+});
 
 let fallbackPlayerId = "";
 
@@ -30,6 +35,19 @@ function createPlayerId() {
   }
 
   return `player-${Math.random().toString(36).slice(2, 14)}-${Date.now().toString(36)}`;
+}
+
+function createGuestSuffix(playerId) {
+  const safePlayerId = normalizePlayerId(playerId) || "player";
+  const hash = Array.from(safePlayerId).reduce((accumulator, character, index) => {
+    return ((accumulator * 33) + character.charCodeAt(0) + index) >>> 0;
+  }, 5381);
+
+  return String(hash % 10000).padStart(4, "0");
+}
+
+function resolveGuestNicknamePrefix(lang = "en") {
+  return GUEST_NICKNAME_PREFIXES[lang] || GUEST_NICKNAME_PREFIXES.en;
 }
 
 export function getOrCreatePlayerId() {
@@ -72,4 +90,16 @@ export function rememberNickname(name) {
   }
 
   localStorage.setItem(PLAYER_NAME_STORAGE_KEY, safeName);
+}
+
+export function clearSavedNickname() {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  localStorage.removeItem(PLAYER_NAME_STORAGE_KEY);
+}
+
+export function buildGuestNickname(playerId, lang = "en") {
+  return normalizeStoredName(`${resolveGuestNicknamePrefix(lang)}#${createGuestSuffix(playerId)}`);
 }

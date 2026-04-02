@@ -25,7 +25,17 @@ export async function resolvePublicFile(publicDir, urlPath) {
 
   try {
     const stats = await fs.stat(resolvedPath);
-    return stats.isFile() ? resolvedPath : null;
+    if (stats.isFile()) {
+      return resolvedPath;
+    }
+
+    if (stats.isDirectory()) {
+      const indexPath = path.join(resolvedPath, "index.html");
+      const indexStats = await fs.stat(indexPath);
+      return indexStats.isFile() ? indexPath : null;
+    }
+
+    return null;
   } catch {
     return null;
   }

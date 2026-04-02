@@ -2,9 +2,9 @@ import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getRankingCorsOrigin, getRankingPort } from "./shared/config.mjs";
+import { getRankingCorsOrigin, getRankingPort, normalizeRankingSeason } from "./shared/config.mjs";
 import { sendJson, sendText } from "./shared/http.mjs";
-import { ensureRankingStorage, isNicknameAvailable, readRankings, submitRanking } from "./shared/rankings-store.mjs";
+import { ensureRankingStorage, isNicknameAvailable, readAllRankings, readRankings, submitRanking } from "./shared/rankings-store.mjs";
 
 function isDirectRun(moduleUrl) {
   return process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(moduleUrl);
@@ -14,6 +14,10 @@ function setCorsHeaders(response, corsOrigin) {
   response.setHeader("Access-Control-Allow-Origin", corsOrigin);
   response.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
+function getRequestedSeason(requestUrl, fallback = 1) {
+  return normalizeRankingSeason(requestUrl.searchParams.get("season"), fallback);
 }
 
 async function readJsonBody(request) {
@@ -71,12 +75,27 @@ export async function startRankingServer({
       }
 
       if (pathname === "/api/rankings" && request.method === "GET") {
-        sendJson(response, 200, { rankings: await readRankings() });
+        const season = getRequestedSeason(requestUrl);
+        sendJson(response, 200, {
+          season,
+          rankings: await readRankings({ season })
+        });
+        return;
+      }
+
+      if (pathname === "/api/rankings/all" && request.method === "GET") {
+        const season = getRequestedSeason(requestUrl);
+        sendJson(response, 200, {
+          season,
+          rankings: await readAllRankings({ season })
+        });
         return;
       }
 
       if (pathname === "/api/rankings/name-available" && request.method === "GET") {
+        const season = getRequestedSeason(requestUrl);
         sendJson(response, 200, await isNicknameAvailable({
+          season,
           playerId: requestUrl.searchParams.get("playerId"),
           name: requestUrl.searchParams.get("name")
         }));
@@ -85,7 +104,10 @@ export async function startRankingServer({
 
       if (pathname === "/api/rankings" && request.method === "POST") {
         const payload = await readJsonBody(request);
-        sendJson(response, 200, await submitRanking(payload));
+        sendJson(response, 200, await submitRanking({
+          ...payload,
+          season: normalizeRankingSeason(payload.season, 1)
+        }));
         return;
       }
 

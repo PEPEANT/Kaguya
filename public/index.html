@@ -32,21 +32,15 @@
             <div class="intro-copy">
               <p class="lobby-eyebrow" data-i18n="app.brand">Kaguya</p>
               <h1 class="intro-title" data-i18n="app.name">Snack Rush</h1>
-              <p class="intro-prompt" data-i18n="intro.prompt">Choose your nickname</p>
               <form id="introForm" class="start-form intro-start-form">
-                <input
-                  id="introNicknameInput"
-                  name="nickname"
-                  type="text"
-                  maxlength="12"
-                  autocomplete="nickname"
-                  placeholder="Nickname"
-                  data-i18n="lobby.nickname"
-                  data-i18n-attr="placeholder"
-                >
-                <button id="introStartButton" type="submit" data-i18n="lobby.enter">Enter</button>
+                <button id="introStartButton" type="submit" data-i18n="intro.guestStart">Start as Guest</button>
               </form>
-              <p id="introNicknameStatus" class="intro-nickname-status" hidden></p>
+              <div id="introAuthActions" class="intro-auth-actions">
+                <button id="introLoginButton" type="button" class="ghost-button" data-i18n="auth.login">Login</button>
+                <button id="introSignupButton" type="button" class="ghost-button" data-i18n="auth.signup">Sign Up</button>
+              </div>
+              <p id="introAuthHint" class="intro-auth-hint" data-i18n="auth.optionalHint">Play as a guest first, then log in later to link your records.</p>
+              <p id="introAuthState" class="intro-auth-state" hidden></p>
             </div>
           </div>
         </div>
@@ -62,6 +56,7 @@
           <button class="lang-btn" data-lang="ja" type="button">JP</button>
           <button class="lang-btn" data-lang="en" type="button">EN</button>
           <button id="musicToggleButton" type="button" class="lang-btn lang-btn--music" data-i18n="audio.off">Music Off</button>
+          <button id="lobbyLoginButton" type="button" class="lang-btn lang-btn--auth" data-i18n="auth.login">Login</button>
         </div>
 
         <section class="lobby-hero">
@@ -74,10 +69,25 @@
             <div class="lobby-player-info">
               <strong id="lobbyNicknameDisplay" class="lobby-player-name"></strong>
               <span class="lobby-player-rank-row">
-                <span class="lobby-player-rank-label" data-i18n="lobby.rankLabel">순위</span>
+                <span class="lobby-player-rank-label" data-i18n="lobby.rankLabel">Rank</span>
                 <strong id="lobbyRankDisplay" class="lobby-player-rank">-</strong>
               </span>
             </div>
+
+            <section class="account-card" id="accountCard" hidden>
+              <div class="account-card-head">
+                <span id="authModeBadge" class="account-badge account-badge--guest" data-i18n="auth.guestBadge">Guest</span>
+                <div class="account-head-actions">
+                  <button id="profileInfoButton" type="button" class="ghost-button ghost-button--small" data-i18n="profile.open" hidden>My Info</button>
+                  <button id="authLogoutButton" type="button" class="ghost-button ghost-button--small" data-i18n="auth.logout" hidden>Log Out</button>
+                </div>
+              </div>
+              <strong id="authDisplayName" class="account-display" data-i18n="auth.guestTitle">Playing as Guest</strong>
+              <p id="authSummaryText" class="account-summary-text"></p>
+              <div id="authGuestActions" class="account-actions" hidden>
+                <button id="lobbySignupButton" type="button" class="ghost-button" data-i18n="auth.signup">Sign Up</button>
+              </div>
+            </section>
 
             <input id="nicknameInput" name="nickname" type="text" maxlength="12" autocomplete="nickname" hidden>
             <form id="startForm">
@@ -143,7 +153,7 @@
                   </article>
                   <article class="guide-card">
                     <img class="guide-thumb" data-guide-item="iroha" alt="Iroha">
-                    <strong data-i18n="item.iroha">이로하</strong>
+                    <strong data-i18n="item.iroha">Iroha</strong>
                     <span class="guide-points guide-points--iroha">+50</span>
                   </article>
                 </div>
@@ -177,8 +187,12 @@
               <div class="section-head-main">
                 <button id="rankingBackButton" type="button" class="panel-back-button" data-i18n="lobby.mobileBack">Back</button>
                 <h2 data-i18n="ranking.title">Live Ranking</h2>
+                <span class="season-badge season-badge--current" data-i18n="ranking.currentSeasonBadge">Season 1</span>
               </div>
-              <button id="refreshRankingButton" type="button" class="ghost-button" data-i18n="ranking.refresh">Refresh</button>
+              <div class="ranking-head-actions">
+                <button id="viewAllRankingsButton" type="button" class="ghost-button ghost-button--small" data-i18n="ranking.viewAll">View All</button>
+                <button id="refreshRankingButton" type="button" class="ghost-button ghost-button--small" data-i18n="ranking.refresh">Refresh</button>
+              </div>
             </div>
             <p class="ranking-status" id="rankingStatus" data-i18n="ranking.loading">Loading...</p>
             <ol class="ranking-list" id="rankingList"></ol>
@@ -233,6 +247,126 @@
         </div>
       </section>
     </main>
+
+    <div class="modal-overlay" id="authModal" hidden>
+      <div class="modal-card auth-modal-card">
+        <div class="modal-head">
+          <h2 id="authModalTitle" data-i18n="auth.loginTitle">Login</h2>
+          <button id="closeAuthModalButton" type="button" class="ghost-button ghost-button--small" data-i18n="ranking.close">Close</button>
+        </div>
+        <div class="auth-tabs">
+          <button id="authLoginTab" type="button" class="auth-tab auth-tab--active" data-i18n="auth.login">Login</button>
+          <button id="authSignupTab" type="button" class="auth-tab" data-i18n="auth.signup">Sign Up</button>
+        </div>
+        <p class="auth-caption" data-i18n="auth.optionalHint">Play as a guest first, then log in later to link your records.</p>
+        <form id="authForm" class="auth-form">
+          <label class="auth-field">
+            <span data-i18n="auth.email">Email</span>
+            <input id="authEmailInput" name="email" type="email" autocomplete="email" required>
+          </label>
+          <label id="authNicknameField" class="auth-field" hidden>
+            <span data-i18n="auth.nickname">Nickname</span>
+            <input id="authNicknameInput" name="nickname" type="text" autocomplete="nickname" maxlength="12">
+          </label>
+          <label class="auth-field">
+            <span data-i18n="auth.password">Password</span>
+            <input id="authPasswordInput" name="password" type="password" autocomplete="current-password" minlength="6" required>
+          </label>
+          <label id="authConfirmField" class="auth-field" hidden>
+            <span data-i18n="auth.passwordConfirm">Confirm Password</span>
+            <input id="authConfirmInput" name="confirmPassword" type="password" autocomplete="new-password" minlength="6">
+          </label>
+          <p id="authStatus" class="auth-status" hidden></p>
+          <button id="authSubmitButton" type="submit" class="solid-button" data-i18n="auth.loginSubmit">Login</button>
+          <button id="authResetPasswordButton" type="button" class="ghost-button auth-reset-button" data-i18n="auth.resetPassword">Find Password</button>
+          <p class="auth-help" data-i18n="auth.resetPasswordHint">Your email is only used when you need to recover your password. We will send a reset link to the email you signed up with.</p>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="profileModal" hidden>
+      <div class="modal-card profile-modal-card">
+        <div class="modal-head">
+          <h2 data-i18n="profile.title">My Info</h2>
+          <button id="closeProfileModalButton" type="button" class="ghost-button ghost-button--small" data-i18n="ranking.close">Close</button>
+        </div>
+        <p id="profileStatus" class="profile-status" hidden></p>
+
+        <section class="profile-summary-card">
+          <span class="account-badge account-badge--member" data-i18n="profile.linkedBadge">Linked Account</span>
+          <strong id="profileAccountName" class="profile-account-name">-</strong>
+          <p id="profileAccountSummary" class="profile-account-summary">-</p>
+          <div class="profile-nickname-tools">
+            <button id="profileNicknameEditButton" type="button" class="ghost-button ghost-button--small" data-i18n="profile.editNickname">Edit Nickname</button>
+          </div>
+          <form id="profileNicknameForm" class="profile-nickname-form" hidden>
+            <label class="auth-field">
+              <span data-i18n="profile.nicknameField">Current Nickname</span>
+              <input id="profileNicknameInput" name="profileNickname" type="text" autocomplete="nickname" maxlength="12">
+            </label>
+            <p class="profile-nickname-hint" data-i18n="profile.nicknameHint">Your profile nickname changes right away. Rankings update to the new name from the next score save.</p>
+            <div class="profile-nickname-actions">
+              <button id="profileNicknameSaveButton" type="submit" class="solid-button" data-i18n="profile.saveNickname">Save</button>
+              <button id="profileNicknameCancelButton" type="button" class="ghost-button" data-i18n="profile.cancelNicknameEdit">Cancel</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="profile-section">
+          <div class="profile-section-head">
+            <div>
+              <h3 data-i18n="profile.currentSeasonRecordTitle">Current Season Record</h3>
+              <p class="profile-section-subtitle" data-i18n="profile.currentSeasonBody">This is your best record in the current season.</p>
+            </div>
+          </div>
+          <div id="profileCurrentSeasonRecord" class="profile-record-card"></div>
+        </section>
+
+        <section class="profile-section">
+          <div class="profile-section-head">
+            <div>
+              <h3 data-i18n="profile.season1RecordTitle">Preseason Record</h3>
+              <p class="profile-section-subtitle" id="profileSeason1Period">2026.03.31</p>
+            </div>
+          </div>
+          <div id="profileSeason1Record" class="profile-record-card"></div>
+        </section>
+
+        <section class="profile-section">
+          <div class="profile-section-head">
+            <div>
+              <h3 data-i18n="profile.season1Top10Title">Preseason Top 10</h3>
+              <p class="profile-section-subtitle" data-i18n="profile.season1Top10Body">These are the final Top 10 standings from the preseason.</p>
+            </div>
+          </div>
+          <ol id="profileSeason1TopList" class="ranking-list"></ol>
+        </section>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="allRankingsModal" hidden>
+      <div class="modal-card">
+        <div class="modal-head">
+          <h2 data-i18n="ranking.allTitle">All Rankings</h2>
+          <button id="closeAllRankingsButton" type="button" class="ghost-button ghost-button--small" data-i18n="ranking.close">Close</button>
+        </div>
+        <div class="season-tabs">
+          <button id="seasonTab2" class="season-tab season-tab--active" type="button">
+            <span data-i18n="ranking.season2Label">Season 1</span>
+            <span class="season-tab-pill season-tab-pill--live" data-i18n="ranking.seasonLive">Live</span>
+          </button>
+          <button id="seasonTab1" class="season-tab" type="button">
+            <span data-i18n="ranking.season1Label">Preseason</span>
+            <span class="season-tab-pill season-tab-pill--ended" data-i18n="ranking.seasonEnded">Ended</span>
+          </button>
+        </div>
+        <p class="ranking-status" id="allRankingsStatus" data-i18n="ranking.loading">Loading...</p>
+        <ol class="ranking-list" id="allRankingsList"></ol>
+        <div class="all-rankings-footer" id="allRankingsFooter" hidden>
+          <button id="toggleAllRankingsButton" type="button" class="ghost-button ghost-button--small all-rankings-toggle" data-i18n="ranking.expandAll">Show 11th and below</button>
+        </div>
+      </div>
+    </div>
 
     <script src="./app-config.js"></script>
     <script type="module" src="./game.js"></script>

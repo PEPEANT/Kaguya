@@ -1,4 +1,5 @@
 import { PLAY_BOUNDS, VIRTUAL_HEIGHT, GAME_DURATION, GROUND_Y } from "./constants.js";
+import { saveSeasonSummary } from "./account-service.js";
 import { ITEM_TYPES } from "./config/items.js";
 import { ROUND_DEFINITIONS } from "./config/progression.js";
 import { playItemSoundEffect } from "./audio.js";
@@ -208,13 +209,35 @@ function getResultNoticeText() {
   return "";
 }
 
+async function persistSeasonSummary(payload) {
+  if (!state.authUser?.uid || !payload?.currentEntry) {
+    return;
+  }
+
+  try {
+    await saveSeasonSummary({
+      uid: state.authUser.uid,
+      season: payload.season,
+      playerId: payload.currentEntry.playerId || state.playerId,
+      nickname: payload.currentEntry.name || state.nickname,
+      score: payload.currentEntry.score,
+      rank: payload.rank,
+      submittedAt: payload.currentEntry.submittedAt
+    });
+  } catch (error) {
+    console.warn("Failed to persist season summary.", error);
+  }
+}
+
 async function submitScore() {
   const payload = await submitScoreToProvider({
     playerId: state.playerId,
+    uid: state.authUser?.uid || "",
     name: state.nickname,
     score: state.score
   });
 
+  await persistSeasonSummary(payload);
   state.rankings = Array.isArray(payload.rankings) ? payload.rankings : [];
   state.lastRank = payload.rank || null;
   state.isNewBest = Boolean(payload.accepted);

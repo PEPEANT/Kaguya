@@ -12,9 +12,8 @@ import {
   where
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
-import { getFirebaseRuntimeConfig } from "../config/runtime.js";
+import { getCurrentRankingSeason, getFirebaseRuntimeConfig, getRankingSeasonCollection } from "../config/runtime.js";
 
-const COLLECTION_NAME = "rankings";
 const MAX_RANKINGS = 10;
 
 function hasFirebaseConfig(config) {
@@ -40,6 +39,10 @@ function normalizePlayerId(playerId) {
   return /^[A-Za-z0-9_-]{16,64}$/u.test(trimmed) ? trimmed : "";
 }
 
+function normalizeUid(uid) {
+  return String(uid || "").trim();
+}
+
 function compareRankings(left, right) {
   if (left.score !== right.score) {
     return right.score - left.score;
@@ -49,18 +52,21 @@ function compareRankings(left, right) {
 }
 
 function sanitizeEntry(entry) {
-  const name = normalizeName(entry?.name);
+  const nicknameSnapshot = normalizeName(entry?.nicknameSnapshot || entry?.name);
   const playerId = normalizePlayerId(entry?.playerId);
+  const uid = normalizeUid(entry?.uid);
   const score = Math.floor(Number(entry?.score));
   const submittedAt = typeof entry?.submittedAt === "string" ? entry.submittedAt : new Date(0).toISOString();
 
-  if (!name || !playerId || !Number.isFinite(score)) {
+  if (!nicknameSnapshot || !playerId || !Number.isFinite(score)) {
     return null;
   }
 
   return {
     playerId,
-    name,
+    uid,
+    nicknameSnapshot,
+    name: nicknameSnapshot,
     score,
     submittedAt
   };
@@ -75,14 +81,25 @@ function getDb() {
   return getFirestore(getFirebaseApp());
 }
 
-async function readRankingEntry(playerId) {
-  const snapshot = await getDoc(doc(getDb(), COLLECTION_NAME, playerId));
+function resolveSeason(season) {
+  const safeSeason = Math.floor(Number(season));
+  return Number.isFinite(safeSeason) && safeSeason >= 1
+    ? safeSeason
+    : getCurrentRankingSeason();
+}
+
+function getCollectionName(season = getCurrentRankingSeason()) {
+  return getRankingSeasonCollection(resolveSeason(season));
+}
+
+async function readRankingEntry(playerId, season = getCurrentRankingSeason()) {
+  const snapshot = await getDoc(doc(getDb(), getCollectionName(season), playerId));
   return snapshot.exists() ? sanitizeEntry(snapshot.data()) : null;
 }
 
-async function readTopRankings() {
+async function readTopRankings(season = getCurrentRankingSeason()) {
   const rankingQuery = query(
-    collection(getDb(), COLLECTION_NAME),
+    collection(getDb(), getCollectionName(season)),
     orderBy("score", "desc"),
     limit(MAX_RANKINGS)
   );
@@ -95,9 +112,22 @@ async function readTopRankings() {
     .slice(0, MAX_RANKINGS);
 }
 
-async function readEntriesByName(name) {
+async function readAllRankings(season = getCurrentRankingSeason()) {
+  const rankingQuery = query(
+    collection(getDb(), getCollectionName(season)),
+    orderBy("score", "desc")
+  );
+  const snapshot = await getDocs(rankingQuery);
+
+  return snapshot.docs
+    .map((entryDoc) => sanitizeEntry(entryDoc.data()))
+    .filter(Boolean)
+    .sort(compareRankings);
+}
+
+async function readEntriesByName(name, season = getCurrentRankingSeason()) {
   const nameQuery = query(
-    collection(getDb(), COLLECTION_NAME),
+    collection(getDb(), getCollectionName(season)),
     where("name", "==", name),
     limit(2)
   );
@@ -108,14 +138,29 @@ async function readEntriesByName(name) {
     .filter(Boolean);
 }
 
-export async function fetchRankings() {
+export async function fetchRankings({ season = getCurrentRankingSeason() } = {}) {
   ensureFirebaseReady();
-  return { rankings: await readTopRankings() };
+  const safeSeason = resolveSeason(season);
+  return {
+    season: safeSeason,
+    rankings: await readTopRankings(safeSeason)
+  };
 }
 
-export async function checkNicknameAvailability({ playerId, name }) {
+export async function fetchAllRankings({ season = getCurrentRankingSeason() } = {}) {
+  ensureFirebaseReady();
+  const safeSeason = resolveSeason(season);
+
+  return {
+    season: safeSeason,
+    rankings: await readAllRankings(safeSeason)
+  };
+}
+
+export async function checkNicknameAvailability({ season = getCurrentRankingSeason(), playerId, name }) {
   ensureFirebaseReady();
 
+  const safeSeason = resolveSeason(season);
   const safePlayerId = normalizePlayerId(playerId);
   const safeName = normalizeName(name);
 
@@ -123,7 +168,7 @@ export async function checkNicknameAvailability({ playerId, name }) {
     return { available: false };
   }
 
-  const matchedEntries = await readEntriesByName(safeName);
+  const matchedEntries = await readEntriesByName(safeName, safeSeason);
   const conflictingEntry = matchedEntries.find((entry) => entry.playerId !== safePlayerId);
 
   return {
@@ -131,10 +176,12 @@ export async function checkNicknameAvailability({ playerId, name }) {
   };
 }
 
-export async function submitScore({ playerId, name, score }) {
+export async function submitScore({ season = getCurrentRankingSeason(), playerId, uid = "", name, score }) {
   ensureFirebaseReady();
 
+  const safeSeason = resolveSeason(season);
   const safePlayerId = normalizePlayerId(playerId);
+  const safeUid = normalizeUid(uid);
   const safeName = normalizeName(name);
   const safeScore = Math.floor(Number(score));
 
@@ -150,23 +197,36 @@ export async function submitScore({ playerId, name, score }) {
     throw new Error("Score is invalid.");
   }
 
-  const availability = await checkNicknameAvailability({ playerId: safePlayerId, name: safeName });
+  const availability = await checkNicknameAvailability({
+    season: safeSeason,
+    playerId: safePlayerId,
+    name: safeName
+  });
   if (!availability.available) {
     throw new Error("Nickname is already taken.");
   }
 
   const submittedAt = new Date().toISOString();
-  const rankingRef = doc(getDb(), COLLECTION_NAME, safePlayerId);
+  const rankingRef = doc(getDb(), getCollectionName(safeSeason), safePlayerId);
 
   let accepted = false;
 
   await runTransaction(getDb(), async (transaction) => {
     const snapshot = await transaction.get(rankingRef);
     const existing = snapshot.exists() ? sanitizeEntry(snapshot.data()) : null;
+    const shouldRefreshMetadata = Boolean(
+      existing
+      && (
+        (safeUid && existing.uid !== safeUid)
+        || existing.nicknameSnapshot !== safeName
+      )
+    );
 
     if (!existing || safeScore > existing.score) {
       transaction.set(rankingRef, {
         playerId: safePlayerId,
+        uid: safeUid,
+        nicknameSnapshot: safeName,
         name: safeName,
         score: safeScore,
         submittedAt
@@ -175,9 +235,11 @@ export async function submitScore({ playerId, name, score }) {
       return;
     }
 
-    if (existing.name !== safeName) {
+    if (shouldRefreshMetadata) {
       transaction.set(rankingRef, {
         playerId: safePlayerId,
+        uid: safeUid || existing.uid || "",
+        nicknameSnapshot: safeName,
         name: safeName,
         score: existing.score,
         submittedAt: existing.submittedAt
@@ -185,12 +247,16 @@ export async function submitScore({ playerId, name, score }) {
     }
   });
 
-  const currentEntry = await readRankingEntry(safePlayerId);
-  const rankings = await readTopRankings();
+  const currentEntry = await readRankingEntry(safePlayerId, safeSeason);
+  const allRankings = await readAllRankings(safeSeason);
+  const rankings = allRankings.slice(0, MAX_RANKINGS);
 
   return {
+    season: safeSeason,
     accepted,
-    rank: currentEntry ? rankings.findIndex((entry) => entry.playerId === currentEntry.playerId) + 1 || null : null,
+    currentEntry,
+    rank: currentEntry ? allRankings.findIndex((entry) => entry.playerId === currentEntry.playerId) + 1 || null : null,
+    totalPlayers: allRankings.length,
     rankings
   };
 }
