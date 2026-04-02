@@ -100,6 +100,21 @@ img {
   z-index: 1;
 }
 
+.intro-version {
+  position: absolute;
+  top: clamp(0.85rem, 2.8vw, 1.35rem);
+  left: clamp(0.9rem, 3vw, 1.5rem);
+  margin: 0;
+  z-index: 2;
+  font-size: 0.82rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  color: rgba(76, 36, 16, 0.78);
+  text-shadow: 0 1px 10px rgba(255, 248, 238, 0.45);
+  pointer-events: none;
+}
+
 .intro-card {
   background: transparent;
   border: 0;
