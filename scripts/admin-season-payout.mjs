@@ -489,11 +489,31 @@ async function writeSummaryFile(summary) {
   return filepath;
 }
 
-async function main() {
-  const options = parseArgs();
+export async function runSeasonPayout(rawOptions = {}) {
+  const options = {
+    season: Math.max(1, Math.floor(Number(rawOptions.season) || 1)),
+    seasonLabel: String(rawOptions.seasonLabel || "").trim(),
+    apply: Boolean(rawOptions.apply),
+    limit: Math.max(0, Math.floor(Number(rawOptions.limit) || 0)),
+    uid: String(rawOptions.uid || "").trim(),
+    playerId: String(rawOptions.playerId || "").trim(),
+    targetUid: String(rawOptions.targetUid || "").trim(),
+    quiet: Boolean(rawOptions.quiet)
+  };
   if (options.targetUid && !options.playerId) {
     throw new Error("--target-uid requires --player-id.");
   }
+
+  const log = (...args) => {
+    if (!options.quiet) {
+      console.log(...args);
+    }
+  };
+  const logError = (...args) => {
+    if (!options.quiet) {
+      console.error(...args);
+    }
+  };
 
   refreshFirebaseTokenCache();
 
@@ -503,7 +523,7 @@ async function main() {
   const rewardMessageId = `season_reward_paid_s${season}`;
   const startedAt = new Date().toISOString();
 
-  console.log(options.apply
+  log(options.apply
     ? `[apply] Paying ${seasonLabel} rewards from ${rankingCollection}.`
     : `[dry-run] Previewing ${seasonLabel} rewards from ${rankingCollection}.`);
 
@@ -562,7 +582,7 @@ async function main() {
       entry.status = "skipped-missing-uid";
       summary.skippedMissingUid += 1;
       summary.entries.push(entry);
-      console.log(`- skip #${entry.rank} ${entry.name} (${entry.playerId}) -> no uid`);
+      log(`- skip #${entry.rank} ${entry.name} (${entry.playerId}) -> no uid`);
       continue;
     }
 
@@ -584,7 +604,7 @@ async function main() {
         entry.status = "skipped-existing-message";
         summary.skippedExistingMessage += 1;
         summary.entries.push(entry);
-        console.log(`- skip #${entry.rank} ${entry.name} (${resolvedUid}) -> already paid`);
+        log(`- skip #${entry.rank} ${entry.name} (${resolvedUid}) -> already paid`);
         continue;
       }
 
@@ -641,33 +661,41 @@ async function main() {
       summary.processedEntries += 1;
       summary.totalRewardedAmount += entry.rewardAmount;
       summary.entries.push(entry);
-      console.log(`${options.apply ? "+" : "*"} #${entry.rank} ${entry.name} -> ${entry.rewardAmount.toLocaleString("ko-KR")} HujuPay`);
+      log(`${options.apply ? "+" : "*"} #${entry.rank} ${entry.name} -> ${entry.rewardAmount.toLocaleString("ko-KR")} HujuPay`);
     } catch (error) {
       entry.status = "failed";
       entry.error = error instanceof Error ? error.message : String(error);
       summary.failedCount += 1;
       summary.entries.push(entry);
-      console.error(`! failed #${entry.rank} ${entry.name} (${resolvedUid})`);
-      console.error(`  ${entry.error}`);
+      logError(`! failed #${entry.rank} ${entry.name} (${resolvedUid})`);
+      logError(`  ${entry.error}`);
     }
   }
 
   summary.completedAt = new Date().toISOString();
   const summaryFile = await writeSummaryFile(summary);
+  summary.summaryFile = summaryFile;
 
-  console.log("");
-  console.log(options.apply ? "Reward payout complete." : "Reward payout preview complete.");
-  console.log(`Eligible entries: ${summary.eligibleEntries}`);
-  console.log(`Processed entries: ${summary.processedEntries}`);
-  console.log(`Skipped (already paid): ${summary.skippedExistingMessage}`);
-  console.log(`Skipped (missing uid): ${summary.skippedMissingUid}`);
-  console.log(`Skipped (uid filter): ${summary.skippedUidFilter}`);
-  console.log(`Failed: ${summary.failedCount}`);
-  console.log(`Total reward amount: ${summary.totalRewardedAmount.toLocaleString("ko-KR")} HujuPay`);
-  console.log(`Summary written to ${summaryFile}`);
+  log("");
+  log(options.apply ? "Reward payout complete." : "Reward payout preview complete.");
+  log(`Eligible entries: ${summary.eligibleEntries}`);
+  log(`Processed entries: ${summary.processedEntries}`);
+  log(`Skipped (already paid): ${summary.skippedExistingMessage}`);
+  log(`Skipped (missing uid): ${summary.skippedMissingUid}`);
+  log(`Skipped (uid filter): ${summary.skippedUidFilter}`);
+  log(`Failed: ${summary.failedCount}`);
+  log(`Total reward amount: ${summary.totalRewardedAmount.toLocaleString("ko-KR")} HujuPay`);
+  log(`Summary written to ${summaryFile}`);
+  return summary;
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+async function main() {
+  await runSeasonPayout(parseArgs());
+}
+
+if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}

@@ -109,6 +109,18 @@ export function getCurrentAuthUser() {
   }
 }
 
+export async function getCurrentAuthIdToken(forceRefresh = false) {
+  ensureFirebaseReady();
+  await ensurePersistenceReady();
+
+  const user = getFirebaseAuth().currentUser;
+  if (!user) {
+    throw new Error("Authenticated user is required.");
+  }
+
+  return user.getIdToken(Boolean(forceRefresh));
+}
+
 export async function signUpWithEmail({ email, password, nickname = "" }) {
   ensureFirebaseReady();
   await ensurePersistenceReady();

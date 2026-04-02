@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { handleAdminApiRequest } from "./admin-api.mjs";
 import { getAppPort, getRankingApiBaseUrl, PROCESSED_ASSETS_DIR, PUBLIC_DIR, ROOT_DIR } from "./shared/config.mjs";
 import { resolveAssetFile, resolvePublicFile } from "./shared/assets.mjs";
 import { sendFile, sendJavaScript, sendJson, sendText } from "./shared/http.mjs";
@@ -107,6 +108,11 @@ export async function startAppServer({
           rankingApiBaseUrl,
           now: new Date().toISOString()
         });
+        return;
+      }
+
+      if (pathname === "/api/admin/action") {
+        await handleAdminApiRequest(request, response, requestUrl);
         return;
       }
 

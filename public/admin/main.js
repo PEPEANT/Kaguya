@@ -1,6 +1,6 @@
 import { getApp, getApps, initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
 import { collection, doc, getDoc, getDocs, getFirestore, orderBy, query, where } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
-import { initAuth } from "../game/auth.js";
+import { getCurrentAuthIdToken, initAuth } from "../game/auth.js";
 import {
   getAdminAccessConfig,
   getAvailableRankingSeasons,
@@ -51,7 +51,31 @@ const elements = {
   presenceTableBody: document.getElementById("presenceTableBody"),
   rankingTableBody: document.getElementById("rankingTableBody"),
   trendChart: document.getElementById("trendChart"),
-  chartTooltip: document.getElementById("chartTooltip")
+  chartTooltip: document.getElementById("chartTooltip"),
+  seasonPayoutSeason: document.getElementById("seasonPayoutSeason"),
+  seasonPayoutLimit: document.getElementById("seasonPayoutLimit"),
+  seasonPayoutPlayerId: document.getElementById("seasonPayoutPlayerId"),
+  seasonPayoutTargetUid: document.getElementById("seasonPayoutTargetUid"),
+  seasonPayoutPreviewButton: document.getElementById("seasonPayoutPreviewButton"),
+  seasonPayoutApplyButton: document.getElementById("seasonPayoutApplyButton"),
+  seasonPayoutStatus: document.getElementById("seasonPayoutStatus"),
+  seasonPayoutResult: document.getElementById("seasonPayoutResult"),
+  walletAdjustUid: document.getElementById("walletAdjustUid"),
+  walletAdjustDelta: document.getElementById("walletAdjustDelta"),
+  walletAdjustReason: document.getElementById("walletAdjustReason"),
+  walletAdjustTitle: document.getElementById("walletAdjustTitle"),
+  walletAdjustBody: document.getElementById("walletAdjustBody"),
+  walletAdjustApplyButton: document.getElementById("walletAdjustApplyButton"),
+  sendMessageUid: document.getElementById("sendMessageUid"),
+  sendMessageId: document.getElementById("sendMessageId"),
+  sendMessageTitle: document.getElementById("sendMessageTitle"),
+  sendMessageBody: document.getElementById("sendMessageBody"),
+  sendMessageApplyButton: document.getElementById("sendMessageApplyButton"),
+  deleteMessageUid: document.getElementById("deleteMessageUid"),
+  deleteMessageId: document.getElementById("deleteMessageId"),
+  deleteMessageApplyButton: document.getElementById("deleteMessageApplyButton"),
+  playerActionStatus: document.getElementById("playerActionStatus"),
+  playerActionResult: document.getElementById("playerActionResult")
 };
 
 const adminAccessConfig = getAdminAccessConfig();
@@ -64,6 +88,90 @@ const adminState = {
 };
 
 let barHitAreas = [];
+
+function readTrimmedValue(element) {
+  return String(element?.value || "").trim();
+}
+
+function readWholeNumber(element, fallback = 0) {
+  const value = Math.floor(Number(element?.value));
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function setInlineStatus(element, text, tone = "info") {
+  if (!element) {
+    return;
+  }
+
+  element.textContent = formatText(text, "");
+  element.dataset.tone = tone;
+}
+
+function setResultBox(element, value) {
+  if (!element) {
+    return;
+  }
+
+  element.textContent = typeof value === "string"
+    ? value
+    : JSON.stringify(value, null, 2);
+}
+
+function populateSeasonSelect() {
+  if (!elements.seasonPayoutSeason) {
+    return;
+  }
+
+  elements.seasonPayoutSeason.innerHTML = RANKING_SEASONS.map((seasonConfig) => `
+    <option value="${seasonConfig.id}">
+      ${escapeHtml(seasonConfig.displayName)}${seasonConfig.period ? ` (${escapeHtml(seasonConfig.period)})` : ""}
+    </option>
+  `).join("");
+  elements.seasonPayoutSeason.value = String(CURRENT_SEASON);
+}
+
+function prefillAdminTargets({ uid = "", playerId = "" } = {}) {
+  if (uid) {
+    [elements.walletAdjustUid, elements.sendMessageUid, elements.deleteMessageUid, elements.seasonPayoutTargetUid]
+      .forEach((element) => {
+        if (element) {
+          element.value = uid;
+        }
+      });
+  }
+
+  if (playerId && elements.seasonPayoutPlayerId) {
+    elements.seasonPayoutPlayerId.value = playerId;
+  }
+}
+
+async function runAdminActionRequest(action, payload) {
+  const idToken = await getCurrentAuthIdToken();
+  const response = await fetch("/api/admin/action", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${idToken}`
+    },
+    body: JSON.stringify({ action, payload })
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.ok) {
+    throw new Error(formatText(data.error, `Admin request failed (${response.status})`));
+  }
+
+  return data.result;
+}
+
+function getSelectedPayoutSeason() {
+  const selectedSeason = Number.parseInt(readTrimmedValue(elements.seasonPayoutSeason), 10);
+  return Number.isInteger(selectedSeason) && selectedSeason >= 1 ? selectedSeason : CURRENT_SEASON;
+}
+
+function getSelectedPayoutSeasonLabel() {
+  return getRankingSeasonConfig(getSelectedPayoutSeason()).displayName;
+}
 
 function hasFirebaseConfig(config) {
   return Boolean(config?.apiKey && config?.projectId && config?.appId);
@@ -505,6 +613,11 @@ function renderPlayerDetail(entry, detail) {
   const latestPresence = detail.latestPresence;
   const sessionStats = detail.sessionStats;
   const accountSummary = detail.accountSummary;
+
+  prefillAdminTargets({
+    uid: detail.uid,
+    playerId: detail.playerId
+  });
 
   const identityRows = [
     { label: "Player ID", value: formatText(detail.playerId) },
@@ -949,6 +1062,199 @@ async function fetchRecentSessions() {
     .filter((entry) => isValidIso(entry.startedAt));
 }
 
+async function handleSeasonPayoutAction({ apply }) {
+  const season = getSelectedPayoutSeason();
+  const playerId = readTrimmedValue(elements.seasonPayoutPlayerId);
+  const targetUid = readTrimmedValue(elements.seasonPayoutTargetUid);
+  const limit = Math.max(0, readWholeNumber(elements.seasonPayoutLimit, 0));
+  const seasonLabel = getSelectedPayoutSeasonLabel();
+
+  if (targetUid && !playerId) {
+    throw new Error("Force target UID requires a playerId filter.");
+  }
+
+  setInlineStatus(elements.seasonPayoutStatus, apply ? "Applying payout..." : "Loading payout preview...");
+  setResultBox(elements.seasonPayoutResult, "Working...");
+
+  const result = await runAdminActionRequest(apply ? "season-payout-apply" : "season-payout-preview", {
+    season,
+    seasonLabel,
+    limit,
+    playerId,
+    targetUid
+  });
+
+  setInlineStatus(
+    elements.seasonPayoutStatus,
+    apply
+      ? `${formatText(seasonLabel)} payout applied. ${formatNumber(result.processedEntries)} entries processed.`
+      : `${formatText(seasonLabel)} payout preview ready. ${formatNumber(result.eligibleEntries)} eligible entries.`,
+    "success"
+  );
+  setResultBox(elements.seasonPayoutResult, result);
+
+  if (apply) {
+    await refreshAdminData();
+  }
+}
+
+async function handleWalletAdjustAction() {
+  const uid = readTrimmedValue(elements.walletAdjustUid);
+  const delta = readWholeNumber(elements.walletAdjustDelta, 0);
+  const reason = readTrimmedValue(elements.walletAdjustReason);
+  const title = readTrimmedValue(elements.walletAdjustTitle);
+  const body = readTrimmedValue(elements.walletAdjustBody);
+
+  if (!uid) {
+    throw new Error("Target UID is required.");
+  }
+
+  if (!delta) {
+    throw new Error("Delta must not be zero.");
+  }
+
+  if (!reason) {
+    throw new Error("Reason is required.");
+  }
+
+  setInlineStatus(elements.playerActionStatus, "Applying wallet change...");
+  setResultBox(elements.playerActionResult, "Working...");
+
+  const result = await runAdminActionRequest("adjust-wallet", {
+    uid,
+    delta,
+    reason,
+    title,
+    body,
+    apply: true,
+    season: getSelectedPayoutSeason(),
+    seasonLabel: "Admin"
+  });
+
+  setInlineStatus(elements.playerActionStatus, `Wallet updated for ${uid}.`, "success");
+  setResultBox(elements.playerActionResult, result);
+}
+
+async function handleSendMessageAction() {
+  const uid = readTrimmedValue(elements.sendMessageUid);
+  const messageId = readTrimmedValue(elements.sendMessageId);
+  const title = readTrimmedValue(elements.sendMessageTitle);
+  const body = readTrimmedValue(elements.sendMessageBody);
+
+  if (!uid) {
+    throw new Error("Target UID is required.");
+  }
+
+  if (!title || !body) {
+    throw new Error("Title and body are required.");
+  }
+
+  setInlineStatus(elements.playerActionStatus, "Sending inbox message...");
+  setResultBox(elements.playerActionResult, "Working...");
+
+  const result = await runAdminActionRequest("send-message", {
+    uid,
+    messageId,
+    title,
+    body,
+    apply: true,
+    season: getSelectedPayoutSeason(),
+    seasonLabel: "Admin",
+    claimed: true
+  });
+
+  setInlineStatus(elements.playerActionStatus, `Message sent to ${uid}.`, "success");
+  setResultBox(elements.playerActionResult, result);
+}
+
+async function handleDeleteMessageAction() {
+  const uid = readTrimmedValue(elements.deleteMessageUid);
+  const messageId = readTrimmedValue(elements.deleteMessageId);
+
+  if (!uid) {
+    throw new Error("Target UID is required.");
+  }
+
+  if (!messageId) {
+    throw new Error("Message ID is required.");
+  }
+
+  setInlineStatus(elements.playerActionStatus, "Deleting inbox message...");
+  setResultBox(elements.playerActionResult, "Working...");
+
+  const result = await runAdminActionRequest("delete-message", {
+    uid,
+    messageId,
+    apply: true
+  });
+
+  setInlineStatus(elements.playerActionStatus, `Message ${messageId} deleted for ${uid}.`, "success");
+  setResultBox(elements.playerActionResult, result);
+}
+
+function bindAdminOperationControls() {
+  elements.seasonPayoutPreviewButton?.addEventListener("click", async () => {
+    try {
+      await handleSeasonPayoutAction({ apply: false });
+    } catch (error) {
+      console.error(error);
+      setInlineStatus(elements.seasonPayoutStatus, formatText(error?.message, "Payout preview failed."), "error");
+      setResultBox(elements.seasonPayoutResult, formatText(error?.message, "Payout preview failed."));
+    }
+  });
+
+  elements.seasonPayoutApplyButton?.addEventListener("click", async () => {
+    const seasonLabel = getSelectedPayoutSeasonLabel();
+    if (!window.confirm(`${seasonLabel} payout will update balances and inbox messages. Continue?`)) {
+      return;
+    }
+
+    try {
+      await handleSeasonPayoutAction({ apply: true });
+    } catch (error) {
+      console.error(error);
+      setInlineStatus(elements.seasonPayoutStatus, formatText(error?.message, "Payout apply failed."), "error");
+      setResultBox(elements.seasonPayoutResult, formatText(error?.message, "Payout apply failed."));
+    }
+  });
+
+  elements.walletAdjustApplyButton?.addEventListener("click", async () => {
+    try {
+      await handleWalletAdjustAction();
+    } catch (error) {
+      console.error(error);
+      setInlineStatus(elements.playerActionStatus, formatText(error?.message, "Wallet update failed."), "error");
+      setResultBox(elements.playerActionResult, formatText(error?.message, "Wallet update failed."));
+    }
+  });
+
+  elements.sendMessageApplyButton?.addEventListener("click", async () => {
+    try {
+      await handleSendMessageAction();
+    } catch (error) {
+      console.error(error);
+      setInlineStatus(elements.playerActionStatus, formatText(error?.message, "Message send failed."), "error");
+      setResultBox(elements.playerActionResult, formatText(error?.message, "Message send failed."));
+    }
+  });
+
+  elements.deleteMessageApplyButton?.addEventListener("click", async () => {
+    const uid = readTrimmedValue(elements.deleteMessageUid);
+    const messageId = readTrimmedValue(elements.deleteMessageId);
+    if (!window.confirm(`Delete message ${messageId || "(empty)"} for ${uid || "(empty)"}?`)) {
+      return;
+    }
+
+    try {
+      await handleDeleteMessageAction();
+    } catch (error) {
+      console.error(error);
+      setInlineStatus(elements.playerActionStatus, formatText(error?.message, "Message delete failed."), "error");
+      setResultBox(elements.playerActionResult, formatText(error?.message, "Message delete failed."));
+    }
+  });
+}
+
 async function refreshAdminData() {
   elements.refreshButton.disabled = true;
   elements.presenceStatus.textContent = "Loading...";
@@ -1009,6 +1315,8 @@ async function bootstrapAdminDashboard() {
   ensurePlayerModal();
   setupChartTooltip();
   bindPlayerLookupTriggers();
+  populateSeasonSelect();
+  bindAdminOperationControls();
 
   elements.refreshButton.addEventListener("click", () => {
     void refreshAdminData();

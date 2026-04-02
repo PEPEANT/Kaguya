@@ -8,6 +8,11 @@ import {
   refreshFirebaseTokenCache,
   writeSummaryFile
 } from "./admin-firestore-utils.mjs";
+import { fileURLToPath } from "node:url";
+
+function isDirectRun(moduleUrl) {
+  return process.argv[1] && process.argv[1] === fileURLToPath(moduleUrl);
+}
 
 function printHelp() {
   console.log("Usage: node scripts/admin-user-actions.mjs <command> [options]");
@@ -261,7 +266,7 @@ function buildLogPayload({
   };
 }
 
-async function runSendMessage(options) {
+export async function runSendMessage(options) {
   const uid = normalizeUid(options.uid);
   ensureRequired(uid, "uid");
   ensureRequired(options.title, "title");
@@ -329,9 +334,10 @@ async function runSendMessage(options) {
     ? `Message ${messageId} sent to ${uid}.`
     : `[dry-run] Message ${messageId} is ready for ${uid}.`);
   console.log(`Summary written to ${summary.summaryFile}`);
+  return summary;
 }
 
-async function runAdjustWallet(options) {
+export async function runAdjustWallet(options) {
   const uid = normalizeUid(options.uid);
   const delta = normalizeInt(options.delta, 0);
   ensureRequired(uid, "uid");
@@ -431,9 +437,10 @@ async function runAdjustWallet(options) {
     ? `Wallet for ${uid} adjusted by ${delta}. New balance: ${nextBalance}.`
     : `[dry-run] Wallet for ${uid} would change by ${delta}. New balance: ${nextBalance}.`);
   console.log(`Summary written to ${summary.summaryFile}`);
+  return summary;
 }
 
-async function runDeleteMessage(options) {
+export async function runDeleteMessage(options) {
   const uid = normalizeUid(options.uid);
   ensureRequired(uid, "uid");
   ensureRequired(options.messageId, "message-id");
@@ -459,7 +466,7 @@ async function runDeleteMessage(options) {
     summary.summaryFile = await writeSummaryFile("admin-delete-message", summary);
     console.log(`Message ${messageId} does not exist for ${uid}.`);
     console.log(`Summary written to ${summary.summaryFile}`);
-    return;
+    return summary;
   }
 
   if (options.apply) {
@@ -484,28 +491,32 @@ async function runDeleteMessage(options) {
     ? `Message ${messageId} deleted for ${uid}.`
     : `[dry-run] Message ${messageId} would be deleted for ${uid}.`);
   console.log(`Summary written to ${summary.summaryFile}`);
+  return summary;
 }
 
-async function main() {
-  const { command, options } = parseArgs();
+export async function runAdminUserAction(command, options = {}) {
   refreshFirebaseTokenCache();
 
   switch (command) {
     case "send-message":
-      await runSendMessage(options);
-      return;
+      return runSendMessage(options);
     case "adjust-wallet":
-      await runAdjustWallet(options);
-      return;
+      return runAdjustWallet(options);
     case "delete-message":
-      await runDeleteMessage(options);
-      return;
+      return runDeleteMessage(options);
     default:
       throw new Error(`Unknown command: ${command}`);
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+async function main() {
+  const { command, options } = parseArgs();
+  await runAdminUserAction(command, options);
+}
+
+if (isDirectRun(import.meta.url)) {
+  main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}
