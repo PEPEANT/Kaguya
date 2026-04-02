@@ -993,22 +993,22 @@ async function handleSignOut() {
 function getProfileLoadingMessage() {
   switch (getLang()) {
     case "ja":
-      return "Checking your Season 1 record.";
+      return "Checking your Season 0 record.";
     case "en":
-      return "Checking your Season 1 record.";
+      return "Checking your Season 0 record.";
     default:
-      return "프리시즌 기록을 확인하고 있어요.";
+      return "시즌 0 기록을 확인하고 있어요.";
   }
 }
 
 function getProfileFailedMessage() {
   switch (getLang()) {
     case "ja":
-      return "Could not load your Season 1 record. Please try again.";
+      return "Could not load your Season 0 record. Please try again.";
     case "en":
-      return "Could not load your Season 1 record. Please try again.";
+      return "Could not load your Season 0 record. Please try again.";
     default:
-      return "프리시즌 기록을 불러오지 못했어요. 다시 시도해주세요.";
+      return "시즌 0 기록을 불러오지 못했어요. 다시 시도해주세요.";
   }
 }
 
@@ -1027,11 +1027,11 @@ function getProfileSummaryText(linkedCount) {
   const unit = linkedCount === 1 ? "key" : "keys";
   switch (getLang()) {
     case "ja":
-      return `Looking up preseason records using ${linkedCount} browser-linked identity ${unit} on this account.`;
+      return `Looking up Season 0 records using ${linkedCount} browser-linked identity ${unit} on this account.`;
     case "en":
-      return `Looking up preseason records using ${linkedCount} browser-linked identity ${unit} on this account.`;
+      return `Looking up Season 0 records using ${linkedCount} browser-linked identity ${unit} on this account.`;
     default:
-      return `이 계정에 연결된 브라우저 기록 ${linkedCount}개를 기준으로 프리시즌 기록을 찾고 있어요.`;
+      return `이 계정에 연결된 브라우저 기록 ${linkedCount}개를 기준으로 시즌 0 기록을 찾고 있어요.`;
   }
 }
 

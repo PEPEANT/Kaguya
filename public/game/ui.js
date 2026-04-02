@@ -461,14 +461,26 @@ function getChatLocale() {
 function formatChatTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return "--:--";
+    return "----.--.-- --:--";
   }
 
-  return new Intl.DateTimeFormat(getChatLocale(), {
+  const parts = new Intl.DateTimeFormat(getChatLocale(), {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false
-  }).format(date);
+  }).formatToParts(date);
+
+  const readPart = (type) => parts.find((part) => part.type === type)?.value ?? "";
+  const year = readPart("year");
+  const month = readPart("month");
+  const day = readPart("day");
+  const hour = readPart("hour");
+  const minute = readPart("minute");
+
+  return `${year}.${month}.${day} ${hour}:${minute}`;
 }
 
 export function setLobbyChatStatus(text = "", tone = "info") {

@@ -12,9 +12,9 @@ const rankingSeasons = Object.freeze({
     Object.freeze({
       id: 1,
       kind: "preseason",
-      displayName: "프리시즌",
+      displayName: "시즌 0",
       status: "archived",
-      period: "2026.03.31",
+      period: "2026.03.31 ~ 2026.04.01",
       firebaseCollection: "rankings"
     })
   ])

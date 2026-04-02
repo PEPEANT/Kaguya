@@ -244,8 +244,47 @@ img {
   justify-items: end;
 }
 
-.lobby-profile-button {
+.ghost-button.lobby-profile-button {
+  position: relative;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 5rem;
+  min-height: 2.8rem;
+  margin-top: 0.12rem;
+  margin-right: 0.2rem;
+  padding: 0.68rem 1.05rem;
+  border-radius: 1.2rem;
+  white-space: nowrap;
+  word-break: keep-all;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  background: linear-gradient(180deg, rgba(255, 247, 239, 0.98) 0%, rgba(255, 229, 203, 0.96) 100%);
+  border: 1px solid rgba(234, 179, 132, 0.56);
+  box-shadow: 0 12px 24px rgba(82, 43, 19, 0.1);
+  overflow: visible;
+  z-index: 0;
+}
+
+.ghost-button.lobby-profile-button::after {
+  content: "";
+  position: absolute;
+  right: 0.82rem;
+  bottom: -0.34rem;
+  width: 0.82rem;
+  height: 0.82rem;
+  background: linear-gradient(180deg, rgba(255, 240, 224, 0.98) 0%, rgba(249, 217, 183, 0.95) 100%);
+  border-right: 1px solid rgba(234, 179, 132, 0.52);
+  border-bottom: 1px solid rgba(234, 179, 132, 0.52);
+  border-radius: 0 0 0.18rem 0;
+  transform: rotate(45deg);
+  box-shadow: 0 7px 16px rgba(82, 43, 19, 0.08);
+  z-index: -1;
+}
+
+.ghost-button.lobby-profile-button:hover:not(:disabled)::after {
+  transform: translateY(0.04rem) rotate(45deg);
 }
 
 .lobby-wallet-card {
@@ -2726,10 +2765,12 @@ img {
 .chat-message-head {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.55rem;
+  row-gap: 0.16rem;
   padding-inline: 0.35rem;
   width: fit-content;
-  max-width: min(100%, 19rem);
+  max-width: min(100%, 22rem);
 }
 
 .chat-message-name {
@@ -2743,13 +2784,15 @@ img {
 .chat-message-time {
   flex-shrink: 0;
   color: rgba(122, 89, 67, 0.82);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .chat-message-text {
   margin: 0;
   position: relative;
+  z-index: 0;
   max-width: min(100%, 19rem);
   padding: 0.78rem 0.95rem;
   border-radius: 1.15rem 1.15rem 1.15rem 0.45rem;
@@ -2765,15 +2808,16 @@ img {
 .chat-message-text::before {
   content: "";
   position: absolute;
-  left: 0.8rem;
-  bottom: -0.48rem;
+  left: -0.4rem;
+  top: 1rem;
   width: 0.92rem;
   height: 0.92rem;
   background: inherit;
-  border-right: 1px solid rgba(197, 151, 114, 0.18);
+  border-left: 1px solid rgba(197, 151, 114, 0.18);
   border-bottom: 1px solid rgba(197, 151, 114, 0.18);
   transform: rotate(45deg);
   border-radius: 0 0 0.18rem 0;
+  z-index: -1;
 }
 
 .chat-message-card--own .chat-message-head {
@@ -2792,10 +2836,12 @@ img {
 
 .chat-message-card--own .chat-message-text::before {
   left: auto;
-  right: 0.8rem;
-  border-right: none;
-  border-left: 1px solid rgba(255, 150, 82, 0.24);
-  border-bottom: 1px solid rgba(255, 150, 82, 0.24);
+  right: -0.4rem;
+  top: 1rem;
+  border-left: none;
+  border-bottom: none;
+  border-right: 1px solid rgba(255, 150, 82, 0.24);
+  border-top: 1px solid rgba(255, 150, 82, 0.24);
 }
 
 .chat-composer {
