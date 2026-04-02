@@ -1,6 +1,7 @@
 export const elements = {
   body: document.body,
   introScreen: document.getElementById("introScreen"),
+  introBackgroundImage: document.getElementById("introBackgroundImage"),
   introForm: document.getElementById("introForm"),
   introStartButton: document.getElementById("introStartButton"),
   introAuthActions: document.getElementById("introAuthActions"),
@@ -130,6 +131,7 @@ export const elements = {
   moveLeftButton: document.getElementById("moveLeftButton"),
   moveRightButton: document.getElementById("moveRightButton"),
   duckButton: document.getElementById("duckButton"),
+  duckButtonCooldown: document.getElementById("duckButtonCooldown"),
   jumpButton: document.getElementById("jumpButton"),
   orientationGate: document.getElementById("orientationGate"),
   orientationEyebrow: document.getElementById("orientationEyebrow"),

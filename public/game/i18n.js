@@ -486,7 +486,7 @@ Object.assign(TRANSLATIONS.ko, {
   "profile.season1Top10Body": "프리시즌 최종 Top 10 기록입니다.",
   "profile.editNickname": "닉네임 수정",
   "profile.nicknameField": "현재 닉네임",
-  "profile.nicknameHint": "프로필 닉네임은 바로 바뀌고, 랭킹 표시는 다음 점수 저장부터 반영돼요.",
+  "profile.nicknameHint": "프로필 닉네임을 바꾸면 연결된 기존 랭킹 이름도 함께 갱신돼요.",
   "profile.saveNickname": "저장",
   "profile.cancelNicknameEdit": "취소"
 });
@@ -530,7 +530,7 @@ Object.assign(TRANSLATIONS.en, {
   "profile.season1Top10Body": "These are the final Top 10 standings from the preseason.",
   "profile.editNickname": "Edit Nickname",
   "profile.nicknameField": "Current Nickname",
-  "profile.nicknameHint": "Your profile nickname updates right away, and ranking names change the next time you save a score.",
+  "profile.nicknameHint": "When you update your profile nickname, linked ranking names update too.",
   "profile.saveNickname": "Save",
   "profile.cancelNicknameEdit": "Cancel"
 });
@@ -547,7 +547,7 @@ Object.assign(TRANSLATIONS.ja, {
   "profile.season1Top10Body": "プレシーズン最終 Top 10 記録です。",
   "profile.editNickname": "ニックネーム変更",
   "profile.nicknameField": "現在のニックネーム",
-  "profile.nicknameHint": "プロフィールのニックネームはすぐ変わり、ランキング表示は次にスコアを保存したときから反映されます。",
+  "profile.nicknameHint": "プロフィールのニックネームを変えると、連携済みランキング名も一緒に更新されます。",
   "profile.saveNickname": "保存",
   "profile.cancelNicknameEdit": "キャンセル"
 });

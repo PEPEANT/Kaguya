@@ -7,6 +7,8 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E%F0%9F%8D%B0%3C/text%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="image" href="/scene/Login_Main_kr.png">
+    <link rel="preload" as="image" href="/scene/Login_Main_jp.png">
     <link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+JP:wght@400;500;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css">
   </head>
@@ -22,10 +24,13 @@
     <main class="app-shell">
       <section class="intro-screen" id="introScreen">
         <img
-          src="./processed-assets/special/thumbnail_mobile.png"
-          class="intro-mobile-figure"
+          id="introBackgroundImage"
+          src="/scene/Login_Main_kr.png"
+          class="intro-background-image"
           alt=""
           aria-hidden="true"
+          decoding="async"
+          fetchpriority="high"
         >
         <div class="intro-card">
           <form id="introForm" class="intro-start-form">
@@ -103,7 +108,10 @@
             <input id="nicknameInput" name="nickname" type="text" maxlength="12" autocomplete="nickname" hidden>
             <section class="lobby-feature-card" aria-label="Snack Rush Hero">
               <div class="lobby-feature-visual">
-                <img src="/scene/1.jpg" alt="Snack Rush Preview" class="lobby-feature-image">
+                <picture class="lobby-feature-picture">
+                  <source media="(max-width: 760px)" srcset="/processed-assets/special/intro_figure.png">
+                  <img src="/scene/1.jpg" alt="Snack Rush Preview" class="lobby-feature-image">
+                </picture>
                 <div class="lobby-feature-overlay">
                   <span class="lobby-feature-tag" data-i18n="lobby.heroEyebrow">Snack Rush</span>
                   <strong class="lobby-feature-title" data-i18n="lobby.heroTitle">스낵러시</strong>
@@ -247,6 +255,7 @@
                       <path d="M3 16h5"></path>
                     </svg>
                   </span>
+                  <span id="duckButtonCooldown" class="mobile-button-cooldown" hidden>0.0s</span>
                 </button>
               </div>
             </div>

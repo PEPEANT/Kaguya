@@ -27,7 +27,7 @@ import { applyPlaytestState, fetchRankings, handleMovementKey, spawnPlaytestItem
 import { buildGuestNickname, clearSavedNickname, getOrCreatePlayerId } from "./player-identity.js";
 import { startPresenceTracking } from "./presence.js";
 import { fetchSeasonProfile } from "./profile-service.js";
-import { fetchAllRankingsFromProvider, checkNicknameAvailabilityFromProvider } from "./ranking-service.js";
+import { fetchAllRankingsFromProvider, checkNicknameAvailabilityFromProvider, submitScoreToProvider } from "./ranking-service.js";
 import { renderFrame } from "./render.js";
 import { normalizeName, state } from "./state.js";
 import {
@@ -74,6 +74,7 @@ import {
   setRankingStatus,
   setStartButtonState,
   setTouchControlsVisible,
+  setTouchControlCooldowns,
   showGameScreen,
   showIntroScreen,
   showLobbyScreen
@@ -96,6 +97,11 @@ const LOBBY_CHAT_COOLDOWN_MS = 4_000;
 const MESSAGE_SEEN_STORAGE_PREFIX = "kaguya_messages_seen_v1";
 const MESSAGE_ALERTED_STORAGE_PREFIX = "kaguya_messages_alerted_v1";
 const MAX_STORED_MESSAGE_IDS = 120;
+const INTRO_BACKGROUND_BY_LANG = Object.freeze({
+  ko: "/scene/Login_Main_kr.png",
+  ja: "/scene/Login_Main_jp.png",
+  en: "/scene/Login_Main_jp.png"
+});
 const allRankingsModalState = {
   season: CURRENT_SEASON,
   rankings: [],
@@ -131,6 +137,35 @@ const messageNotificationState = {
 };
 let pendingRoundStartNickname = "";
 let playtestStatusTimer = 0;
+let introBackgroundAssetsPrimed = false;
+
+function getIntroBackgroundSrc(lang = getLang()) {
+  return INTRO_BACKGROUND_BY_LANG[lang] || INTRO_BACKGROUND_BY_LANG.ko;
+}
+
+function primeIntroBackgroundAssets() {
+  if (introBackgroundAssetsPrimed || typeof Image === "undefined") {
+    return;
+  }
+
+  introBackgroundAssetsPrimed = true;
+  Object.values(INTRO_BACKGROUND_BY_LANG).forEach((src) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.src = src;
+  });
+}
+
+function syncIntroBackground() {
+  if (!elements.introBackgroundImage) {
+    return;
+  }
+
+  const nextSrc = getIntroBackgroundSrc();
+  if (elements.introBackgroundImage.getAttribute("src") !== nextSrc) {
+    elements.introBackgroundImage.setAttribute("src", nextSrc);
+  }
+}
 
 function getOrientationGateCopy(mode = "game") {
   switch (mode) {
@@ -341,6 +376,11 @@ function animate(currentTime) {
   lastFrameTime = currentTime;
 
   updateGame(dt);
+  setTouchControlCooldowns({
+    slideRemaining: state.phase === "playing"
+      ? Math.max(0, state.player.slideCooldownUntil - state.elapsed)
+      : 0
+  });
   renderFrame();
   requestAnimationFrame(animate);
 }
@@ -1481,6 +1521,83 @@ async function handleLobbyChatSubmit() {
   }
 }
 
+function collectLinkedPlayerIds(accountIdentity = null) {
+  return [...new Set(
+    [
+      state.playerId,
+      accountIdentity?.firstLinkedPlayerId,
+      accountIdentity?.lastSeenPlayerId,
+      ...(Array.isArray(accountIdentity?.linkedPlayerIds) ? accountIdentity.linkedPlayerIds : [])
+    ]
+      .map((playerId) => String(playerId || "").trim())
+      .filter(Boolean)
+  )];
+}
+
+async function syncRankingNicknameForSeason({ season, user, nickname, linkedPlayerIds }) {
+  if (!user?.uid || !nickname || !linkedPlayerIds.length) {
+    return false;
+  }
+
+  const { rankings = [] } = await fetchAllRankingsFromProvider({ season });
+  const existingEntry = rankings.find((entry) => linkedPlayerIds.includes(String(entry?.playerId || "").trim()));
+
+  if (!existingEntry?.playerId || !Number.isFinite(Number(existingEntry.score))) {
+    return false;
+  }
+
+  const existingNickname = normalizeName(existingEntry.nicknameSnapshot || existingEntry.name);
+  const existingUid = String(existingEntry.uid || "").trim();
+  if (existingNickname === nickname && existingUid === user.uid) {
+    return false;
+  }
+
+  const result = await submitScoreToProvider({
+    season,
+    playerId: existingEntry.playerId,
+    uid: user.uid,
+    name: nickname,
+    score: existingEntry.score
+  });
+
+  if (season === CURRENT_SEASON && Array.isArray(result?.rankings)) {
+    state.rankings = result.rankings;
+    renderRankingList(state.rankings);
+    setRankingStatus(state.rankings.length ? t("ranking.best") : t("ranking.empty"));
+  }
+
+  return true;
+}
+
+async function syncAuthenticatedRankingNicknames({ user = state.authUser, nickname = "" } = {}) {
+  if (isPlaytestActive() || !user?.uid) {
+    return false;
+  }
+
+  const safeNickname = normalizeName(nickname || getMemberDisplayName(user) || state.nickname);
+  if (!safeNickname) {
+    return false;
+  }
+
+  const accountIdentity = await fetchAccountIdentity({ uid: user.uid });
+  const linkedPlayerIds = collectLinkedPlayerIds(accountIdentity);
+  if (!linkedPlayerIds.length) {
+    return false;
+  }
+
+  const seasonsToSync = [...new Set([CURRENT_SEASON, PROFILE_SEASON])];
+  const results = await Promise.allSettled(
+    seasonsToSync.map((season) => syncRankingNicknameForSeason({
+      season,
+      user,
+      nickname: safeNickname,
+      linkedPlayerIds
+    }))
+  );
+
+  return results.some((result) => result.status === "fulfilled" && result.value);
+}
+
 async function handleShopButtonClick(btn) {
   if (!isAccountShopEnabled()) {
     return;
@@ -1571,6 +1688,34 @@ function renderProfileFromState() {
   });
   setProfileNicknameEditing(profileModalState.editingNickname);
   updateMessagesButtonLabel();
+}
+
+function applyNicknameToProfileRankingState(nickname) {
+  const safeNickname = normalizeName(nickname);
+  if (!safeNickname) {
+    return;
+  }
+
+  [profileModalState.currentSeasonProfile, profileModalState.season1Profile].forEach((seasonProfile) => {
+    if (seasonProfile?.record) {
+      seasonProfile.record.name = safeNickname;
+      seasonProfile.record.nicknameSnapshot = safeNickname;
+    }
+
+    if (Array.isArray(seasonProfile?.topRankings)) {
+      seasonProfile.topRankings = seasonProfile.topRankings.map((entry) => {
+        if (String(entry?.playerId || "").trim() !== state.playerId) {
+          return entry;
+        }
+
+        return {
+          ...entry,
+          name: safeNickname,
+          nicknameSnapshot: safeNickname
+        };
+      });
+    }
+  });
 }
 
 async function syncSeasonRewardInbox() {
@@ -1760,6 +1905,12 @@ async function saveProfileNickname() {
 
     state.authUser = updatedUser;
     applyNickname(requestedNickname);
+    await syncAuthenticatedRankingNicknames({
+      user: updatedUser,
+      nickname: requestedNickname
+    });
+    await refreshCurrentSeasonRank();
+    applyNicknameToProfileRankingState(requestedNickname);
     updateAuthUi();
     setProfileNicknameEditing(false);
     renderProfileFromState();
@@ -1857,9 +2008,14 @@ function handleAuthStateChanged(user) {
     profileModalState.messages = [];
     applyNickname(getMemberDisplayName(state.authUser) || state.nickname || getGuestNickname());
     updateAuthUi();
-    void syncAuthenticatedAccount();
+    void (async () => {
+      await syncAuthenticatedAccount();
+      await syncAuthenticatedRankingNicknames({ user: state.authUser });
+      await refreshCurrentSeasonRank();
+    })().catch((error) => {
+      console.warn("Failed to sync authenticated ranking metadata.", error);
+    });
     void refreshAccountWallet();
-    void refreshCurrentSeasonRank();
     void refreshMessagesInbox({ triggerLobbyPrompt: true });
     closeAuthDialog();
   } else {
@@ -2708,6 +2864,8 @@ export async function boot() {
 
   booted = true;
   initI18n();
+  primeIntroBackgroundAssets();
+  syncIntroBackground();
   state.playerId = getOrCreatePlayerId();
   clearSavedNickname();
   applyNickname(getGuestNickname());
@@ -2747,6 +2905,7 @@ export async function boot() {
   });
 
   window.addEventListener("langchange", () => {
+    syncIntroBackground();
     if (!state.authUser) {
       applyNickname(getGuestNickname());
     }

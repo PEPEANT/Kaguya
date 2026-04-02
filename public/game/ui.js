@@ -84,6 +84,25 @@ export function setTouchControlsVisible(visible) {
   elements.mobileControls.hidden = !visible;
 }
 
+export function setTouchControlCooldowns({ slideRemaining = 0 } = {}) {
+  if (!elements.duckButton || !elements.duckButtonCooldown) {
+    return;
+  }
+
+  const safeRemaining = Number.isFinite(slideRemaining) ? Math.max(0, slideRemaining) : 0;
+  const visible = safeRemaining > 0.01;
+
+  elements.duckButton.dataset.cooldownActive = visible ? "true" : "false";
+  elements.duckButtonCooldown.hidden = !visible;
+
+  if (!visible) {
+    elements.duckButtonCooldown.textContent = "";
+    return;
+  }
+
+  elements.duckButtonCooldown.textContent = t("chat.cooldown").replace("{seconds}", safeRemaining.toFixed(1));
+}
+
 export function setOrientationGateState({
   visible = false,
   eyebrow = t("orientation.eyebrow"),

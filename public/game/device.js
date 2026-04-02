@@ -1,13 +1,44 @@
+function matchesAnyMedia(query) {
+  return typeof window !== "undefined" && typeof window.matchMedia === "function"
+    ? window.matchMedia(query).matches
+    : false;
+}
+
+function hasTouchCapabilities() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const navigatorRef = window.navigator;
+  const maxTouchPoints = Number(navigatorRef?.maxTouchPoints || navigatorRef?.msMaxTouchPoints || 0);
+  return matchesAnyMedia("(hover: none), (pointer: coarse)")
+    || maxTouchPoints > 0
+    || "ontouchstart" in window;
+}
+
+function looksLikeMobileBrowser() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const userAgent = String(window.navigator?.userAgent || "");
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|SamsungBrowser|CriOS/i.test(userAgent);
+}
+
+function isNarrowViewport() {
+  return matchesAnyMedia("(max-width: 760px)");
+}
+
 export function isTouchDevice() {
-  return window.matchMedia("(hover: none), (pointer: coarse)").matches;
+  return hasTouchCapabilities() || (looksLikeMobileBrowser() && isNarrowViewport());
 }
 
 export function isPortraitTouchViewport() {
-  return isTouchDevice() && window.matchMedia("(orientation: portrait)").matches;
+  return isTouchDevice() && matchesAnyMedia("(orientation: portrait)");
 }
 
 export function isLandscapeTouchViewport() {
-  return isTouchDevice() && window.matchMedia("(orientation: landscape)").matches;
+  return isTouchDevice() && matchesAnyMedia("(orientation: landscape)");
 }
 
 export async function requestLandscapePresentation(target) {
