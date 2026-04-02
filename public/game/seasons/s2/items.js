@@ -37,10 +37,10 @@ export const ITEM_TYPES = [
     soundKey: "special"
   },
   { key: "danger1", points: -32, damage: 1, weight: 0.09, minRound: 4, maxScore: 10599, size: 110, radius: 42, color: "#ff8b89", soundKey: "damage", stompRewardPoints: 10, stompBounceVelocity: 560, slideRewardPoints: 8 },
-  { key: "danger2", points: -20, damage: 1, weight: 0.082, maxScore: 2199, size: 108, radius: 40, color: "#ffb3ae", soundKey: "damage", stompRewardPoints: 10, stompBounceVelocity: 560 },
-  { key: "danger3", points: -26, damage: 1, weight: 0.062, maxScore: 2199, size: 104, radius: 40, color: "#ff9d96", soundKey: "damage", stompRewardPoints: 10, stompBounceVelocity: 560 },
-  { key: "danger2", points: -20, damage: 1, weight: 0.032, minScore: 2200, maxScore: 5199, size: 108, radius: 40, color: "#ffb3ae", soundKey: "damage", stompRewardPoints: 10, stompBounceVelocity: 560 },
-  { key: "danger3", points: -26, damage: 1, weight: 0.024, minScore: 2200, maxScore: 5199, size: 104, radius: 40, color: "#ff9d96", soundKey: "damage", stompRewardPoints: 10, stompBounceVelocity: 560 },
+  { key: "danger2", points: -20, damage: 1, weight: 0.082, maxScore: 2199, size: 108, radius: 40, color: "#ffb3ae", soundKey: "damage", stompRewardPoints: 10, stompBounceVelocity: 560, slideRewardPoints: 8 },
+  { key: "danger3", points: -26, damage: 1, weight: 0.062, maxScore: 2199, size: 104, radius: 40, color: "#ff9d96", soundKey: "damage", stompRewardPoints: 10, stompBounceVelocity: 560, slideRewardPoints: 8 },
+  { key: "danger2", points: -20, damage: 1, weight: 0.032, minScore: 2200, maxScore: 5199, size: 108, radius: 40, color: "#ffb3ae", soundKey: "damage", stompRewardPoints: 10, stompBounceVelocity: 560, slideRewardPoints: 8 },
+  { key: "danger3", points: -26, damage: 1, weight: 0.024, minScore: 2200, maxScore: 5199, size: 104, radius: 40, color: "#ff9d96", soundKey: "damage", stompRewardPoints: 10, stompBounceVelocity: 560, slideRewardPoints: 8 },
   {
     key: "z1",
     points: -36,
@@ -52,6 +52,7 @@ export const ITEM_TYPES = [
     spawnCooldown: 8.2,
     size: 170,
     radius: 54,
+    slideStunDuration: 0.6,
     color: "#ffd3c4",
     soundKey: "damage"
   },
@@ -66,6 +67,7 @@ export const ITEM_TYPES = [
     spawnCooldown: 9.4,
     size: 138,
     radius: 44,
+    slideStunDuration: 0.6,
     color: "#fff0dc",
     soundKey: "damage"
   },
@@ -80,12 +82,13 @@ export const ITEM_TYPES = [
     spawnCooldown: 11,
     size: 150,
     radius: 48,
+    slideStunDuration: 0.6,
     color: "#ffd7bf",
     soundKey: "damage"
   },
   { key: "danger1", points: -40, damage: 1, weight: 0.058, minScore: 10600, size: 118, radius: 44, color: "#ff7a74", soundKey: "damage", stompRewardPoints: 10, stompBounceVelocity: 580, slideRewardPoints: 8 },
-  { key: "danger2", points: -36, damage: 1, weight: 0.05, minScore: 11200, size: 114, radius: 42, color: "#ff9a8f", soundKey: "damage", stompRewardPoints: 10, stompBounceVelocity: 580 },
-  { key: "danger3", points: -42, damage: 1, weight: 0.044, minScore: 11800, size: 112, radius: 42, color: "#ff8b82", soundKey: "damage", stompRewardPoints: 10, stompBounceVelocity: 580 },
+  { key: "danger2", points: -36, damage: 1, weight: 0.05, minScore: 11200, size: 114, radius: 42, color: "#ff9a8f", soundKey: "damage", stompRewardPoints: 10, stompBounceVelocity: 580, slideRewardPoints: 8 },
+  { key: "danger3", points: -42, damage: 1, weight: 0.044, minScore: 11800, size: 112, radius: 42, color: "#ff8b82", soundKey: "damage", stompRewardPoints: 10, stompBounceVelocity: 580, slideRewardPoints: 8 },
   {
     key: "z1",
     points: -54,
@@ -97,6 +100,7 @@ export const ITEM_TYPES = [
     spawnCooldown: 7.4,
     size: 180,
     radius: 58,
+    slideStunDuration: 0.68,
     color: "#ffc9b4",
     soundKey: "damage"
   },
@@ -111,6 +115,7 @@ export const ITEM_TYPES = [
     spawnCooldown: 8.2,
     size: 148,
     radius: 46,
+    slideStunDuration: 0.68,
     color: "#ffe7cb",
     soundKey: "damage"
   },
@@ -125,6 +130,7 @@ export const ITEM_TYPES = [
     spawnCooldown: 9.4,
     size: 158,
     radius: 50,
+    slideStunDuration: 0.68,
     color: "#ffcfaa",
     soundKey: "damage"
   }

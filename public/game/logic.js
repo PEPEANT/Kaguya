@@ -646,6 +646,33 @@ function applySlideBreakReward(item) {
   });
 }
 
+function canSlideStunHeavyItem(item) {
+  const slideStunDuration = Number(item.type?.slideStunDuration || 0);
+  const player = state.player;
+
+  return slideStunDuration > 0
+    && player.isSliding
+    && player.onGround;
+}
+
+function applySlideStun(item) {
+  const slideStunDuration = Math.max(0, Number(item.type?.slideStunDuration) || 0);
+  if (!slideStunDuration) {
+    return;
+  }
+
+  const player = state.player;
+  state.slideStunTimer = Math.max(state.slideStunTimer, slideStunDuration);
+  state.slideStunVisualTimer = Math.max(state.slideStunVisualTimer, Math.min(0.7, slideStunDuration));
+  state.shake = Math.max(state.shake, 0.22);
+  playItemSoundEffect("damage");
+  player.isSliding = false;
+  player.slideTimer = 0;
+  player.slideImpactConsumed = true;
+  player.slideRecoveryTimer = Math.max(player.slideRecoveryTimer, slideStunDuration);
+  player.velocityY = Math.min(player.velocityY, 0);
+}
+
 function activateFinalBossPrep() {
   if (state.finalBossPrepTriggered || !FINAL_BOSS_PREP_CONFIG.enabled || state.score < FINAL_BOSS_PREP_CONFIG.scoreThreshold) {
     return false;
@@ -1004,13 +1031,18 @@ export function handleMovementKey(code, isDown, options = {}) {
 
 function updatePlayer(dt) {
   const player = state.player;
+  const isSlideStunned = state.slideStunTimer > 0;
   const direction = Number(state.input.right) - Number(state.input.left);
   const speedMultiplier = getFinalBossMovementSpeedMultiplier();
 
   player.isCrouching = false;
   player.slideRecoveryTimer = Math.max(0, player.slideRecoveryTimer - dt);
 
-  if (player.isSliding) {
+  if (isSlideStunned) {
+    player.isSliding = false;
+    player.slideTimer = 0;
+    player.walkTime = 0;
+  } else if (player.isSliding) {
     player.x += player.slideDirection * player.speed * SLIDE_SPEED_MULTIPLIER * speedMultiplier * dt;
     player.slideTimer = Math.max(0, player.slideTimer - dt);
     player.walkTime = 0;
@@ -1033,7 +1065,7 @@ function updatePlayer(dt) {
 
   player.x = clamp(player.x, PLAY_BOUNDS.left, PLAY_BOUNDS.right);
 
-  if (state.input.jumpQueued && player.onGround && !player.isSliding) {
+  if (!isSlideStunned && state.input.jumpQueued && player.onGround && !player.isSliding) {
     player.velocityY = -player.jumpPower;
     player.onGround = false;
     state.shake = 0.08;
@@ -1097,6 +1129,11 @@ function updateItems(dt) {
     if (collided) {
       if (canStompDangerItem(item, hitbox, itemCollisionScale, dt)) {
         applyStompReward(item);
+        continue;
+      }
+
+      if (canSlideStunHeavyItem(item)) {
+        applySlideStun(item);
         continue;
       }
 
@@ -1260,6 +1297,8 @@ export function updateGame(dt) {
   state.yummyTimer = Math.max(0, state.yummyTimer - dt);
   state.roundTransitionTimer = Math.max(0, state.roundTransitionTimer - dt);
   state.timeBonusToastTimer = Math.max(0, state.timeBonusToastTimer - dt);
+  state.slideStunTimer = Math.max(0, state.slideStunTimer - dt);
+  state.slideStunVisualTimer = Math.max(0, state.slideStunVisualTimer - dt);
   if (state.timeBonusToastTimer <= 0) {
     state.timeBonusToastText = "";
   }

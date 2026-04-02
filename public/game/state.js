@@ -63,6 +63,8 @@ export const state = {
   floatTexts: [],
   timeBonusToastText: "",
   timeBonusToastTimer: 0,
+  slideStunTimer: 0,
+  slideStunVisualTimer: 0,
   rankings: [],
   lastRank: null,
   hujupayBalance: 0,
@@ -125,6 +127,8 @@ export function resetRound(name) {
   state.floatTexts = [];
   state.timeBonusToastText = "";
   state.timeBonusToastTimer = 0;
+  state.slideStunTimer = 0;
+  state.slideStunVisualTimer = 0;
   state.lastRank = null;
   state.finalBossPrepTriggered = false;
   state.finalBossPrepStartedAt = Number.NEGATIVE_INFINITY;

@@ -258,6 +258,29 @@ function drawTimeBonusToast() {
   ctx.restore();
 }
 
+function drawSlideStunVisual() {
+  if (state.phase !== "playing" || state.slideStunVisualTimer <= 0) {
+    return;
+  }
+
+  const visual = state.assets?.gameOver;
+  if (!visual) {
+    return;
+  }
+
+  const duration = 0.7;
+  const alpha = Math.min(1, state.slideStunVisualTimer / 0.12) * Math.min(1, state.slideStunVisualTimer / duration);
+  const width = 210;
+  const height = 132;
+  const x = clamp(state.player.x - width / 2, 20, VIRTUAL_WIDTH - width - 20);
+  const y = clamp(state.player.y - state.player.height - 28, 28, VIRTUAL_HEIGHT - height - 24);
+
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, alpha);
+  ctx.drawImage(visual, x, y, width, height);
+  ctx.restore();
+}
+
 function drawSlideCooldownHud() {
   if (state.phase !== "playing" || isTouchDevice()) {
     return;
@@ -715,6 +738,7 @@ export function renderFrame() {
     drawRoundBanner();
     drawRoundTransition();
     drawTimeBonusToast();
+    drawSlideStunVisual();
   }
 
   drawScreenFlash();
