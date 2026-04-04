@@ -15,6 +15,8 @@ const REWARD_TIERS = Object.freeze([
   Object.freeze({ minRank: 4, maxRank: 10, reward: 2500 }),
   Object.freeze({ minRank: 11, maxRank: 50, reward: 500 })
 ]);
+const DEFAULT_REWARD_MESSAGE_TITLE_TEMPLATE = "{seasonLabel} 보상 지급 안내";
+const DEFAULT_REWARD_MESSAGE_BODY_TEMPLATE = "축하합니다. {seasonLabel} 최종 순위 {rank}위 보상으로 {rewardAmount} HujuPay를 지급했습니다.";
 
 const userLinkIndex = new Map();
 
@@ -29,6 +31,8 @@ function printHelp() {
   console.log("  --uid <uid>              Restrict payout preview/apply to one user.");
   console.log("  --player-id <playerId>   Restrict payout preview/apply to one playerId.");
   console.log("  --target-uid <uid>       Force a uid for the selected playerId when no link exists.");
+  console.log("  --message-title <text>   Override the payout inbox title template.");
+  console.log("  --message-body <text>    Override the payout inbox body template.");
 }
 
 function parseArgs(argv = process.argv.slice(2)) {
@@ -39,7 +43,9 @@ function parseArgs(argv = process.argv.slice(2)) {
     limit: 0,
     uid: "",
     playerId: "",
-    targetUid: ""
+    targetUid: "",
+    messageTitleTemplate: "",
+    messageBodyTemplate: ""
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -74,6 +80,14 @@ function parseArgs(argv = process.argv.slice(2)) {
         options.targetUid = next;
         index += 1;
         break;
+      case "--message-title":
+        options.messageTitleTemplate = next;
+        index += 1;
+        break;
+      case "--message-body":
+        options.messageBodyTemplate = next;
+        index += 1;
+        break;
       case "--help":
         printHelp();
         process.exit(0);
@@ -97,6 +111,29 @@ function getDefaultSeasonLabel(season) {
 function getRewardAmount(rank) {
   const tier = REWARD_TIERS.find((entry) => rank >= entry.minRank && rank <= entry.maxRank);
   return tier ? tier.reward : 0;
+}
+
+function normalizeTemplateText(value, fallback) {
+  const safeValue = String(value || "").trim();
+  return safeValue || fallback;
+}
+
+function renderTemplate(template, context = {}) {
+  return String(template || "").replace(/\{([a-zA-Z0-9_]+)\}/g, (_, token) => {
+    const resolved = context[token];
+    return resolved === undefined || resolved === null ? `{${token}}` : String(resolved);
+  });
+}
+
+function buildRewardMessageContext({ season, seasonLabel, rank, rewardAmount, name }) {
+  return {
+    season: String(season),
+    seasonLabel: String(seasonLabel || "").trim(),
+    rank: String(rank ?? ""),
+    rewardAmount: Number(rewardAmount || 0).toLocaleString("ko-KR"),
+    rewardAmountRaw: String(Number(rewardAmount || 0)),
+    nickname: String(name || "").trim()
+  };
 }
 
 function normalizeInt(value) {
@@ -366,11 +403,28 @@ function buildRankingEntry(document) {
   };
 }
 
-function buildPaidMessage({ season, seasonLabel, rank, rewardAmount, sentAt }) {
+function buildPaidMessage({
+  season,
+  seasonLabel,
+  rank,
+  rewardAmount,
+  sentAt,
+  name,
+  titleTemplate = DEFAULT_REWARD_MESSAGE_TITLE_TEMPLATE,
+  bodyTemplate = DEFAULT_REWARD_MESSAGE_BODY_TEMPLATE
+}) {
+  const context = buildRewardMessageContext({
+    season,
+    seasonLabel,
+    rank,
+    rewardAmount,
+    name
+  });
+
   return {
     type: "season_reward_paid",
-    title: `${seasonLabel} reward paid`,
-    body: `${seasonLabel} final rank #${rank} reward of HujuPay ${rewardAmount.toLocaleString("ko-KR")} has already been added to your balance.`,
+    title: renderTemplate(normalizeTemplateText(titleTemplate, DEFAULT_REWARD_MESSAGE_TITLE_TEMPLATE), context),
+    body: renderTemplate(normalizeTemplateText(bodyTemplate, DEFAULT_REWARD_MESSAGE_BODY_TEMPLATE), context),
     season,
     seasonLabel,
     rank,
@@ -489,6 +543,14 @@ async function writeSummaryFile(summary) {
   return filepath;
 }
 
+function normalizeTargetUidMap(rawValue) {
+  return Object.fromEntries(
+    Object.entries(rawValue && typeof rawValue === "object" ? rawValue : {})
+      .map(([playerId, uid]) => [String(playerId || "").trim(), String(uid || "").trim()])
+      .filter(([playerId, uid]) => playerId && uid)
+  );
+}
+
 export async function runSeasonPayout(rawOptions = {}) {
   const options = {
     season: Math.max(1, Math.floor(Number(rawOptions.season) || 1)),
@@ -498,6 +560,15 @@ export async function runSeasonPayout(rawOptions = {}) {
     uid: String(rawOptions.uid || "").trim(),
     playerId: String(rawOptions.playerId || "").trim(),
     targetUid: String(rawOptions.targetUid || "").trim(),
+    targetUidByPlayerId: normalizeTargetUidMap(rawOptions.targetUidByPlayerId),
+    messageTitleTemplate: normalizeTemplateText(
+      rawOptions.messageTitleTemplate,
+      DEFAULT_REWARD_MESSAGE_TITLE_TEMPLATE
+    ),
+    messageBodyTemplate: normalizeTemplateText(
+      rawOptions.messageBodyTemplate,
+      DEFAULT_REWARD_MESSAGE_BODY_TEMPLATE
+    ),
     quiet: Boolean(rawOptions.quiet)
   };
   if (options.targetUid && !options.playerId) {
@@ -561,13 +632,19 @@ export async function runSeasonPayout(rawOptions = {}) {
     skippedUidFilter: 0,
     failedCount: 0,
     totalRewardedAmount: 0,
+    rewardMessageId,
+    messageTemplate: {
+      title: options.messageTitleTemplate,
+      body: options.messageBodyTemplate
+    },
     entries: []
   };
 
   for (const rankingEntry of eligibleEntries) {
-    const resolvedUid = options.targetUid && options.playerId && rankingEntry.playerId === options.playerId
+    const manualTargetUid = options.targetUid && options.playerId && rankingEntry.playerId === options.playerId
       ? options.targetUid
-      : await resolveUid(rankingEntry);
+      : options.targetUidByPlayerId[rankingEntry.playerId] || "";
+    const resolvedUid = manualTargetUid || await resolveUid(rankingEntry);
     const entry = {
       playerId: rankingEntry.playerId,
       uid: resolvedUid,
@@ -575,6 +652,19 @@ export async function runSeasonPayout(rawOptions = {}) {
       score: rankingEntry.score,
       rank: rankingEntry.rank,
       rewardAmount: rankingEntry.rewardAmount,
+      messagePreview: {
+        messageId: rewardMessageId,
+        ...buildPaidMessage({
+          season,
+          seasonLabel,
+          rank: rankingEntry.rank,
+          rewardAmount: rankingEntry.rewardAmount,
+          sentAt: startedAt,
+          name: rankingEntry.name,
+          titleTemplate: options.messageTitleTemplate,
+          bodyTemplate: options.messageBodyTemplate
+        })
+      },
       status: "pending"
     };
 
@@ -617,7 +707,10 @@ export async function runSeasonPayout(rawOptions = {}) {
         seasonLabel,
         rank: entry.rank,
         rewardAmount: entry.rewardAmount,
-        sentAt: nowIso
+        sentAt: nowIso,
+        name: entry.name,
+        titleTemplate: options.messageTitleTemplate,
+        bodyTemplate: options.messageBodyTemplate
       });
 
       const userPatch = {

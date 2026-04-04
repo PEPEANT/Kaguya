@@ -25,6 +25,31 @@ function isLocalHost(hostname = "") {
   return ["localhost", "127.0.0.1", "::1", "[::1]"].includes(String(hostname || "").trim().toLowerCase());
 }
 
+function isLoopbackOrigin(origin = "") {
+  if (!origin) {
+    return false;
+  }
+
+  try {
+    const requestOrigin = new URL(origin);
+    return isLocalHost(requestOrigin.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function setAdminCorsHeaders(request, response) {
+  const requestOrigin = String(request.headers.origin || "").trim();
+  if (!isLoopbackOrigin(requestOrigin)) {
+    return;
+  }
+
+  response.setHeader("Access-Control-Allow-Origin", requestOrigin);
+  response.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+  response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  response.setHeader("Vary", "Origin");
+}
+
 async function readJsonBody(request) {
   const chunks = [];
   let totalLength = 0;
@@ -104,6 +129,14 @@ async function requireAuthorizedAdmin(request, requestUrl) {
 }
 
 function sanitizePayoutOptions(payload = {}) {
+  const targetUidByPlayerId = Object.fromEntries(
+    Object.entries(payload.targetUidByPlayerId && typeof payload.targetUidByPlayerId === "object"
+      ? payload.targetUidByPlayerId
+      : {})
+      .map(([playerId, uid]) => [String(playerId || "").trim(), String(uid || "").trim()])
+      .filter(([playerId, uid]) => playerId && uid)
+  );
+
   return {
     season: Math.max(1, Math.floor(Number(payload.season) || 1)),
     seasonLabel: String(payload.seasonLabel || "").trim(),
@@ -112,6 +145,9 @@ function sanitizePayoutOptions(payload = {}) {
     uid: String(payload.uid || "").trim(),
     playerId: String(payload.playerId || "").trim(),
     targetUid: String(payload.targetUid || "").trim(),
+    targetUidByPlayerId,
+    messageTitleTemplate: String(payload.messageTitleTemplate || "").trim(),
+    messageBodyTemplate: String(payload.messageBodyTemplate || "").trim(),
     quiet: true
   };
 }
@@ -233,6 +269,14 @@ async function listSeasonPayoutRecipients(payload = {}) {
 }
 
 export async function handleAdminApiRequest(request, response, requestUrl) {
+  setAdminCorsHeaders(request, response);
+
+  if (request.method === "OPTIONS") {
+    response.writeHead(204);
+    response.end();
+    return true;
+  }
+
   if (request.method !== "POST") {
     sendJson(response, 405, { ok: false, error: "Method not allowed." });
     return true;

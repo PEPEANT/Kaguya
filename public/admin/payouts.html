@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>카구야 관리자 지급 내역</title>
+    <title>카구야 시즌 보상 지급 센터</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -13,19 +13,22 @@
     <main class="admin-shell">
       <header class="admin-header">
         <div>
-          <p class="admin-eyebrow">지급 내역</p>
-          <h1>시즌 보상 지급 완료 내역</h1>
+          <p class="admin-eyebrow">지급 센터</p>
+          <h1>시즌 보상 지급 센터</h1>
         </div>
         <div class="admin-header-actions">
           <a href="./index.html" class="refresh-button refresh-button--secondary">관리자 홈</a>
-          <button id="payoutRefreshButton" type="button" class="refresh-button">새로고침</button>
+          <button id="payoutRefreshButton" type="button" class="refresh-button">전체 새로고침</button>
         </div>
       </header>
 
       <section class="panel-card">
         <div class="panel-head">
-          <h2>조회 조건</h2>
-          <p id="payoutStatus">지급 내역을 불러오는 중...</p>
+          <div>
+            <h2>지급 작업</h2>
+            <p>대상 리스트를 표로 확인하고, uid 누락 행만 보정해서 바로 선택 지급할 수 있습니다.</p>
+          </div>
+          <p id="payoutStatus" class="admin-inline-status">준비됨.</p>
         </div>
         <form class="admin-form-grid">
           <label class="admin-field">
@@ -33,13 +36,96 @@
             <select id="payoutSeason"></select>
           </label>
           <label class="admin-field">
-            <span>표시 수</span>
-            <input id="payoutLimit" type="number" min="0" step="1" value="200" placeholder="0이면 전체">
+            <span>대상 수</span>
+            <input id="payoutLimit" type="number" min="0" step="1" value="0" placeholder="0이면 전체">
           </label>
           <div class="admin-button-row admin-field--wide">
-            <button id="payoutLoadButton" type="button" class="refresh-button">지급 완료 내역 보기</button>
+            <button id="previewLoadButton" type="button" class="refresh-button">대상 미리보기</button>
+            <button id="previewSelectReadyButton" type="button" class="refresh-button refresh-button--secondary">지급 가능 전원 선택</button>
+            <button id="previewClearSelectionButton" type="button" class="refresh-button refresh-button--secondary">선택 해제</button>
+            <button id="previewApplySelectedButton" type="button" class="refresh-button">선택 지급</button>
           </div>
         </form>
+        <p class="admin-inline-status">uid가 비어 있는 행만 수동 uid를 넣으면 선택 지급에 포함됩니다.</p>
+        <p id="previewApplyStatus" class="admin-inline-status">아직 지급 작업을 실행하지 않았습니다.</p>
+      </section>
+
+      <section class="panel-card">
+        <div class="panel-head">
+          <div>
+            <h2>실제 발송 메시지</h2>
+            <p>아래 제목과 본문이 지급 메시지로 그대로 발송됩니다. 필요하면 지급 전에 바로 수정하세요.</p>
+          </div>
+          <p id="payoutMessagePreviewMeta" class="admin-inline-status">대상 미리보기를 불러오면 실제 지급 예시가 여기 표시됩니다.</p>
+        </div>
+        <form class="admin-form-grid admin-form-grid--compact">
+          <label class="admin-field admin-field--wide">
+            <span>메시지 제목 템플릿</span>
+            <input id="payoutMessageTitle" type="text" placeholder="시즌 보상 지급 안내">
+          </label>
+          <label class="admin-field admin-field--wide">
+            <span>메시지 본문 템플릿</span>
+            <textarea id="payoutMessageBody" rows="3" placeholder="축하합니다. 시즌 보상이 지급되었습니다."></textarea>
+          </label>
+          <div class="admin-button-row admin-field--wide">
+            <button id="payoutMessageResetButton" type="button" class="refresh-button refresh-button--secondary">기본 문구 복원</button>
+          </div>
+        </form>
+        <p class="admin-inline-status">사용 가능 변수: <code>{nickname}</code>, <code>{seasonLabel}</code>, <code>{rank}</code>, <code>{rewardAmount}</code></p>
+        <div class="message-preview-card">
+          <p class="message-preview-label">실제 발송 미리보기</p>
+          <div class="message-preview-frame">
+            <strong id="payoutMessagePreviewTitle" class="message-preview-title">시즌 보상 지급 안내</strong>
+            <p id="payoutMessagePreviewBody" class="message-preview-body">지급 대상 미리보기를 불러오면 선택된 플레이어 기준으로 실제 발송 예시가 표시됩니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-stats payout-preview-stats">
+        <article class="stat-card">
+          <span>미리보기 대상</span>
+          <strong id="previewCandidateCount">-</strong>
+        </article>
+        <article class="stat-card">
+          <span>즉시 지급 가능</span>
+          <strong id="previewReadyCount">-</strong>
+        </article>
+        <article class="stat-card">
+          <span>현재 선택</span>
+          <strong id="previewSelectedCount">-</strong>
+        </article>
+        <article class="stat-card">
+          <span>보완 필요</span>
+          <strong id="previewIssueCount">-</strong>
+        </article>
+      </section>
+
+      <section class="panel-card">
+        <div class="panel-head">
+          <h2>지급 대상 미리보기</h2>
+          <p id="previewResultMeta">아직 미리보기를 실행하지 않았습니다.</p>
+        </div>
+        <div class="table-wrap">
+          <table class="payout-table">
+            <thead>
+              <tr>
+                <th>선택</th>
+                <th>순위</th>
+                <th>닉네임</th>
+                <th>보상</th>
+                <th>점수</th>
+                <th>playerId</th>
+                <th>UID</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody id="previewTableBody">
+              <tr class="empty-row">
+                <td colspan="8">미리보기를 실행하면 시즌 보상 대상이 여기에 표시됩니다.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section class="admin-stats admin-stats--compact">
@@ -59,8 +145,11 @@
 
       <section class="panel-card">
         <div class="panel-head">
-          <h2>지급 완료 목록</h2>
+          <h2>지급 완료 내역</h2>
           <p id="payoutResultMeta">아직 불러오지 않았습니다.</p>
+        </div>
+        <div class="admin-button-row">
+          <button id="payoutLoadButton" type="button" class="refresh-button refresh-button--secondary">지급 완료 내역 새로고침</button>
         </div>
         <div class="table-wrap">
           <table>
@@ -77,7 +166,7 @@
             </thead>
             <tbody id="payoutTableBody">
               <tr class="empty-row">
-                <td colspan="7">지급 내역을 불러오는 중입니다.</td>
+                <td colspan="7">지급 완료 내역을 불러오는 중입니다.</td>
               </tr>
             </tbody>
           </table>

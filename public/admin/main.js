@@ -19,6 +19,7 @@ const CURRENT_SEASON = getCurrentRankingSeason();
 const CURRENT_RANKING_COLLECTION = getRankingSeasonCollection(CURRENT_SEASON);
 const CURRENT_SEASON_META = getRankingSeasonConfig(CURRENT_SEASON);
 const RANKING_SEASONS = getAvailableRankingSeasons().sort((left, right) => right.id - left.id);
+const DEFAULT_APP_SERVER_ORIGIN = "http://localhost:3000";
 
 const PERIOD_DEFINITIONS = [
   { key: "daily", label: "오늘", days: 1, dayOffset: 0 },
@@ -60,22 +61,26 @@ const elements = {
   seasonPayoutApplyButton: document.getElementById("seasonPayoutApplyButton"),
   seasonPayoutStatus: document.getElementById("seasonPayoutStatus"),
   seasonPayoutResult: document.getElementById("seasonPayoutResult"),
-  walletAdjustUid: document.getElementById("walletAdjustUid"),
+  playerSelectionClearButton: document.getElementById("playerSelectionClearButton"),
+  selectedPlayerSummary: document.getElementById("selectedPlayerSummary"),
   walletAdjustDelta: document.getElementById("walletAdjustDelta"),
   walletAdjustReason: document.getElementById("walletAdjustReason"),
   walletAdjustTitle: document.getElementById("walletAdjustTitle"),
   walletAdjustBody: document.getElementById("walletAdjustBody"),
+  walletAdjustPreviewMeta: document.getElementById("walletAdjustPreviewMeta"),
+  walletAdjustPreviewTitle: document.getElementById("walletAdjustPreviewTitle"),
+  walletAdjustPreviewBody: document.getElementById("walletAdjustPreviewBody"),
   walletAdjustApplyButton: document.getElementById("walletAdjustApplyButton"),
-  sendMessageUid: document.getElementById("sendMessageUid"),
   sendMessageId: document.getElementById("sendMessageId"),
   sendMessageTitle: document.getElementById("sendMessageTitle"),
   sendMessageBody: document.getElementById("sendMessageBody"),
+  sendMessagePreviewMeta: document.getElementById("sendMessagePreviewMeta"),
+  sendMessagePreviewTitle: document.getElementById("sendMessagePreviewTitle"),
+  sendMessagePreviewBody: document.getElementById("sendMessagePreviewBody"),
   sendMessageApplyButton: document.getElementById("sendMessageApplyButton"),
-  deleteMessageUid: document.getElementById("deleteMessageUid"),
   deleteMessageId: document.getElementById("deleteMessageId"),
   deleteMessageApplyButton: document.getElementById("deleteMessageApplyButton"),
-  playerActionStatus: document.getElementById("playerActionStatus"),
-  playerActionResult: document.getElementById("playerActionResult")
+  playerActionStatus: document.getElementById("playerActionStatus")
 };
 
 const adminAccessConfig = getAdminAccessConfig();
@@ -83,6 +88,8 @@ const adminState = {
   rankings: [],
   activePresence: [],
   recentSessions: [],
+  trendDailyStats: [],
+  selectedManualTarget: null,
   seasonRankingsCache: new Map(),
   playerModal: null
 };
@@ -96,6 +103,26 @@ function readTrimmedValue(element) {
 function readWholeNumber(element, fallback = 0) {
   const value = Math.floor(Number(element?.value));
   return Number.isFinite(value) ? value : fallback;
+}
+
+function isLoopbackHostname(hostname = "") {
+  return ["localhost", "127.0.0.1", "::1", "[::1]"].includes(String(hostname || "").trim().toLowerCase());
+}
+
+function hasInjectedAppConfig() {
+  return typeof window.__APP_CONFIG__ === "object" && window.__APP_CONFIG__ !== null;
+}
+
+function getAdminApiUrl() {
+  if (hasInjectedAppConfig()) {
+    return new URL("/api/admin/action", window.location.origin).toString();
+  }
+
+  if (isLoopbackHostname(window.location.hostname)) {
+    return new URL("/api/admin/action", DEFAULT_APP_SERVER_ORIGIN).toString();
+  }
+
+  return new URL("/api/admin/action", window.location.origin).toString();
 }
 
 function setInlineStatus(element, text, tone = "info") {
@@ -132,7 +159,7 @@ function populateSeasonSelect() {
 
 function prefillAdminTargets({ uid = "", playerId = "" } = {}) {
   if (uid) {
-    [elements.walletAdjustUid, elements.sendMessageUid, elements.deleteMessageUid, elements.seasonPayoutTargetUid]
+    [elements.seasonPayoutTargetUid]
       .forEach((element) => {
         if (element) {
           element.value = uid;
@@ -145,16 +172,94 @@ function prefillAdminTargets({ uid = "", playerId = "" } = {}) {
   }
 }
 
+function getManualTargetValue(target = {}) {
+  return formatText(target.uid, "") || formatText(target.primaryPlayerId, "") || formatText(target.playerId, "");
+}
+
+function getRequiredManualTargetValue() {
+  const targetValue = getManualTargetValue(adminState.selectedManualTarget || {});
+  if (!targetValue) {
+    throw new Error("먼저 랭킹 표에서 플레이어를 선택해주세요.");
+  }
+
+  return targetValue;
+}
+
+function renderSelectedManualTarget() {
+  if (!elements.selectedPlayerSummary) {
+    return;
+  }
+
+  const target = adminState.selectedManualTarget;
+  if (!target) {
+    elements.selectedPlayerSummary.className = "player-selection-summary player-selection-summary--empty";
+    elements.selectedPlayerSummary.innerHTML = "선택된 플레이어 없음";
+    return;
+  }
+
+  const playerIdSummary = [target.primaryPlayerId, ...(Array.isArray(target.playerIds) ? target.playerIds : [])]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .filter((value, index, list) => list.indexOf(value) === index);
+  const sourceSummary = [target.isOnline ? "현재 접속 추정" : "", formatText(target.sourceLabel, "")]
+    .filter(Boolean)
+    .join(" / ");
+  const activitySummary = formatText(
+    target.lastSeenAt ? formatAgo(target.lastSeenAt) : formatDateTime(target.lastLoginAt),
+    "정보 없음"
+  );
+
+  elements.selectedPlayerSummary.className = "player-selection-summary";
+  elements.selectedPlayerSummary.innerHTML = `
+    <span class="player-selection-title">${escapeHtml(formatText(target.nickname, "선택된 플레이어"))}</span>
+    <span class="player-selection-meta">${escapeHtml(formatText(getManualTargetValue(target), "-"))}</span>
+    <span class="player-selection-meta">${escapeHtml(formatList(playerIdSummary))}</span>
+    <span class="player-selection-meta">${escapeHtml(activitySummary)} / ${escapeHtml(formatText(sourceSummary, "랭킹/접속 선택"))}</span>
+  `;
+}
+
+function setSelectedManualTarget(target = {}, { prefill = true } = {}) {
+  const nextTarget = {
+    uid: String(target.uid || "").trim(),
+    nickname: formatText(target.nickname || target.name, ""),
+    primaryPlayerId: String(target.primaryPlayerId || target.playerId || "").trim(),
+    playerId: String(target.playerId || target.primaryPlayerId || "").trim(),
+    playerIds: Array.isArray(target.playerIds)
+      ? target.playerIds.map((value) => String(value || "").trim()).filter(Boolean)
+      : [String(target.playerId || target.primaryPlayerId || "").trim()].filter(Boolean),
+    lastSeenAt: String(target.lastSeenAt || target.lastSeen || "").trim(),
+    lastLoginAt: String(target.lastLoginAt || "").trim(),
+    isOnline: Boolean(target.isOnline),
+    sourceLabel: String(target.sourceLabel || "").trim()
+  };
+
+  adminState.selectedManualTarget = nextTarget;
+  renderSelectedManualTarget();
+  renderManualMessagePreviews();
+}
+
+function clearSelectedManualTarget() {
+  adminState.selectedManualTarget = null;
+  renderSelectedManualTarget();
+  renderManualMessagePreviews();
+}
+
 async function runAdminActionRequest(action, payload) {
   const idToken = await getCurrentAuthIdToken();
-  const response = await fetch("/api/admin/action", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${idToken}`
-    },
-    body: JSON.stringify({ action, payload })
-  });
+  let response;
+
+  try {
+    response = await fetch(getAdminApiUrl(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`
+      },
+      body: JSON.stringify({ action, payload })
+    });
+  } catch {
+    throw new Error("관리자 API에 연결하지 못했습니다. 앱 서버(localhost:3000)를 실행했는지 확인해주세요.");
+  }
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data.ok) {
@@ -280,6 +385,66 @@ function formatAgo(value) {
   }
 
   return `${Math.floor(hours / 24)}일 전`;
+}
+
+function buildWalletAdjustDraft(delta, reason) {
+  const safeDelta = Math.floor(Number(delta) || 0);
+  const absoluteDelta = Math.abs(safeDelta);
+  const actionLabel = safeDelta > 0 ? "지급" : "차감";
+  const safeReason = formatText(reason, "");
+
+  return {
+    title: "후쥬페이 변동 안내",
+    body: [
+      `관리자가 ${formatNumber(absoluteDelta)} HujuPay를 ${actionLabel}했습니다.`,
+      safeReason ? `사유: ${safeReason}` : ""
+    ].filter(Boolean).join("\n")
+  };
+}
+
+function renderWalletAdjustPreview() {
+  if (!elements.walletAdjustPreviewMeta || !elements.walletAdjustPreviewTitle || !elements.walletAdjustPreviewBody) {
+    return;
+  }
+
+  const selectedTarget = adminState.selectedManualTarget || null;
+  const delta = readWholeNumber(elements.walletAdjustDelta, 0);
+  const reason = readTrimmedValue(elements.walletAdjustReason);
+  const defaultDraft = buildWalletAdjustDraft(delta, reason);
+  const title = readTrimmedValue(elements.walletAdjustTitle) || defaultDraft.title;
+  const body = readTrimmedValue(elements.walletAdjustBody) || defaultDraft.body;
+  const targetLabel = selectedTarget
+    ? `${formatText(selectedTarget.nickname, "플레이어")} / ${formatText(getManualTargetValue(selectedTarget), "-")}`
+    : "플레이어를 먼저 선택해주세요";
+
+  elements.walletAdjustPreviewMeta.textContent = delta
+    ? `대상: ${targetLabel} / ${delta > 0 ? "+" : ""}${formatNumber(delta)} HujuPay / 메시지 ID 자동 생성`
+    : `대상: ${targetLabel} / 금액을 입력하면 지급 또는 차감 문구가 완성됩니다.`;
+  elements.walletAdjustPreviewTitle.textContent = title || "후쥬페이 변동 안내";
+  elements.walletAdjustPreviewBody.textContent = body || "금액과 사유를 입력하면 실제 발송 문구가 여기 표시됩니다.";
+}
+
+function renderSendMessagePreview() {
+  if (!elements.sendMessagePreviewMeta || !elements.sendMessagePreviewTitle || !elements.sendMessagePreviewBody) {
+    return;
+  }
+
+  const selectedTarget = adminState.selectedManualTarget || null;
+  const title = readTrimmedValue(elements.sendMessageTitle);
+  const body = readTrimmedValue(elements.sendMessageBody);
+  const messageId = readTrimmedValue(elements.sendMessageId);
+  const targetLabel = selectedTarget
+    ? `${formatText(selectedTarget.nickname, "플레이어")} / ${formatText(getManualTargetValue(selectedTarget), "-")}`
+    : "플레이어를 먼저 선택해주세요";
+
+  elements.sendMessagePreviewMeta.textContent = `대상: ${targetLabel} / 메시지 ID ${messageId || "자동 생성"}`;
+  elements.sendMessagePreviewTitle.textContent = title || "제목을 입력해주세요";
+  elements.sendMessagePreviewBody.textContent = body || "본문을 입력하면 여기서 실제 발송 메시지를 바로 확인할 수 있습니다.";
+}
+
+function renderManualMessagePreviews() {
+  renderWalletAdjustPreview();
+  renderSendMessagePreview();
 }
 
 function compareRankings(left, right) {
@@ -618,6 +783,17 @@ function renderPlayerDetail(entry, detail) {
     uid: detail.uid,
     playerId: detail.playerId
   });
+  setSelectedManualTarget({
+    uid: detail.uid,
+    playerId: detail.playerId,
+    primaryPlayerId: detail.accountSummary?.lastSeenPlayerId || detail.playerId,
+    playerIds: detail.accountSummary?.linkedPlayerIds?.length ? detail.accountSummary.linkedPlayerIds : [detail.playerId],
+    nickname: accountSummary?.currentNickname || entry.name || entry.nickname,
+    lastSeenAt: latestPresence?.lastSeen,
+    isOnline: Boolean(latestPresence?.lastSeen),
+    sourceLabel: entry.sourceLabel || "플레이어 조회"
+  }, { prefill: true });
+  renderRankings(adminState.rankings);
 
   const identityRows = [
     { label: "플레이어 ID", value: formatText(detail.playerId) },
@@ -700,6 +876,24 @@ function extractLookupEntryFromEvent(event) {
 
 function bindPlayerLookupTriggers() {
   const handleLookup = (event) => {
+    const actionTrigger = event.target.closest("[data-manual-target-source]");
+    if (actionTrigger) {
+      const source = actionTrigger.dataset.manualTargetSource;
+      const index = Number.parseInt(actionTrigger.dataset.playerIndex || "", 10);
+      if (!Number.isInteger(index) || index < 0) {
+        return;
+      }
+
+      if (source === "ranking") {
+        const entry = adminState.rankings[index];
+        if (entry) {
+          event.preventDefault();
+          handleManualTargetSelectionFromEntry(entry, "랭킹 표");
+        }
+      }
+      return;
+    }
+
     const entry = extractLookupEntryFromEvent(event);
     if (!entry) {
       return;
@@ -719,12 +913,12 @@ function renderEmptyRow(tbody, columns, message) {
 
 function renderRankings(rankings) {
   if (!rankings.length) {
-    renderEmptyRow(elements.rankingTableBody, 4, "아직 랭킹이 없습니다.");
+    renderEmptyRow(elements.rankingTableBody, 5, "아직 랭킹이 없습니다.");
     return;
   }
 
   elements.rankingTableBody.innerHTML = rankings.map((entry, index) => `
-    <tr>
+    <tr class="${isManualTargetSelected(entry) ? "player-target-row--selected" : ""}">
       <td>${index + 1}</td>
       <td>
         <button
@@ -736,6 +930,14 @@ function renderRankings(rankings) {
       </td>
       <td>${formatNumber(entry.score)}</td>
       <td>${formatDateTime(entry.submittedAt)}</td>
+      <td>
+        <button
+          type="button"
+          class="player-assign-button"
+          data-manual-target-source="ranking"
+          data-player-index="${index}"
+        >${isManualTargetSelected(entry) ? "선택됨" : "작업 선택"}</button>
+      </td>
     </tr>
   `).join("");
 }
@@ -891,6 +1093,32 @@ function buildDailyStats(sessionEntries) {
   });
 }
 
+function getTrendChartScaleMax(values) {
+  const maxValue = Math.max(...values, 1);
+  if (maxValue <= 5) {
+    return 5;
+  }
+
+  if (maxValue <= 10) {
+    return 10;
+  }
+
+  return Math.ceil(maxValue / 5) * 5;
+}
+
+function getTrendChartTicks(scaleMax) {
+  const tickCount = scaleMax <= 5 ? scaleMax : 5;
+  return Array.from({ length: tickCount + 1 }, (_, index) => {
+    const value = Math.round((scaleMax / tickCount) * index);
+    return scaleMax - value;
+  });
+}
+
+function formatTrendChartDayLabel(dayKey) {
+  const [, month = "", day = ""] = String(dayKey || "").split("-");
+  return `${month}.${day}`;
+}
+
 function setupChartTooltip() {
   const canvas = elements.trendChart;
   const tooltip = elements.chartTooltip;
@@ -953,37 +1181,84 @@ function renderTrendChart(dailyStats) {
   context.scale(dpr, dpr);
   context.clearRect(0, 0, width, height);
 
-  const padding = { top: 20, right: 12, bottom: 36, left: 38 };
+  const padding = { top: 20, right: 12, bottom: 36, left: 42 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
-  const maxValue = Math.max(...data.map((entry) => entry.uniquePlayers), 1);
+  const scaleMax = getTrendChartScaleMax(data.map((entry) => entry.uniquePlayers));
+  const tickValues = getTrendChartTicks(scaleMax);
   const barGap = 2;
   const barWidth = Math.max(3, (chartWidth - barGap * Math.max(0, data.length - 1)) / Math.max(1, data.length));
+  const baselineY = padding.top + chartHeight;
 
   barHitAreas = [];
 
+  context.strokeStyle = "rgba(165, 119, 82, 0.18)";
+  context.fillStyle = "rgba(122, 94, 79, 0.85)";
+  context.lineWidth = 1;
+  context.font = '12px "Noto Sans KR", sans-serif';
+  context.textAlign = "right";
+  context.textBaseline = "middle";
+
+  tickValues.forEach((tickValue) => {
+    const y = padding.top + (tickValue / scaleMax) * chartHeight;
+    context.beginPath();
+    context.moveTo(padding.left, y);
+    context.lineTo(width - padding.right, y);
+    context.stroke();
+    context.fillText(String(tickValue), padding.left - 8, y);
+  });
+
+  context.beginPath();
+  context.moveTo(padding.left, baselineY);
+  context.lineTo(width - padding.right, baselineY);
+  context.strokeStyle = "rgba(217, 111, 43, 0.28)";
+  context.stroke();
+
   data.forEach((entry, index) => {
     const x = padding.left + index * (barWidth + barGap);
-    const barHeight = (entry.uniquePlayers / maxValue) * chartHeight;
+    const rawBarHeight = (entry.uniquePlayers / scaleMax) * chartHeight;
+    const barHeight = entry.uniquePlayers > 0 ? Math.max(rawBarHeight, 4) : 0;
     const barY = padding.top + chartHeight - barHeight;
 
-    context.fillStyle = barHeight > 1 ? "#d96f2b" : "rgba(217, 111, 43, 0.2)";
-    context.fillRect(x, Math.max(barY, padding.top + chartHeight - 2), barWidth, Math.max(barHeight, 2));
+    if (barHeight > 0) {
+      context.fillStyle = "#d96f2b";
+      context.fillRect(x, barY, barWidth, barHeight);
+    }
 
     barHitAreas.push({
       x,
       w: barWidth + barGap,
-      barY,
+      barY: barHeight > 0 ? barY : baselineY,
       hitTop: padding.top,
       hitBottom: padding.top + chartHeight,
       entry
     });
+  });
+
+  const labelIndexes = new Set([0, data.length - 1]);
+  const targetLabelCount = Math.min(6, data.length);
+  for (let index = 1; index < targetLabelCount - 1; index += 1) {
+    labelIndexes.add(Math.round((index * (data.length - 1)) / Math.max(1, targetLabelCount - 1)));
+  }
+
+  context.fillStyle = "rgba(122, 94, 79, 0.85)";
+  context.textAlign = "center";
+  context.textBaseline = "top";
+  labelIndexes.forEach((index) => {
+    const entry = data[index];
+    if (!entry) {
+      return;
+    }
+
+    const x = padding.left + index * (barWidth + barGap) + (barWidth / 2);
+    context.fillText(formatTrendChartDayLabel(entry.dayKey), x, baselineY + 8);
   });
 }
 
 function renderAnalytics(sessionEntries) {
   const periodStats = PERIOD_DEFINITIONS.map((definition) => buildPeriodStats(sessionEntries, definition));
   const dailyStats = buildDailyStats(sessionEntries);
+  adminState.trendDailyStats = dailyStats;
   periodStats.forEach((stats) => setTrafficCard(stats.key, stats));
   renderTrendChart(dailyStats);
   elements.trendChartStatus.textContent = sessionEntries.length
@@ -992,7 +1267,7 @@ function renderAnalytics(sessionEntries) {
 }
 
 function applyRankingFailure() {
-  renderEmptyRow(elements.rankingTableBody, 4, "랭킹을 불러오지 못했습니다.");
+  renderEmptyRow(elements.rankingTableBody, 5, "랭킹을 불러오지 못했습니다.");
   elements.rankingCount.textContent = "-";
   elements.rankingStatus.textContent = "불러오기 실패";
 }
@@ -1004,6 +1279,7 @@ function applyPresenceFailure() {
 }
 
 function applyAnalyticsFailure() {
+  adminState.trendDailyStats = [];
   resetTrafficCards();
   elements.trendChartStatus.textContent = "불러오기 실패";
 }
@@ -1062,6 +1338,62 @@ async function fetchRecentSessions() {
     .filter((entry) => isValidIso(entry.startedAt));
 }
 
+function isManualTargetSelected(entry = {}) {
+  const selectedTarget = adminState.selectedManualTarget;
+  if (!selectedTarget) {
+    return false;
+  }
+
+  const entryUid = String(entry.uid || "").trim();
+  const entryPlayerId = String(entry.playerId || "").trim();
+  return (selectedTarget.uid && entryUid && selectedTarget.uid === entryUid)
+    || (selectedTarget.primaryPlayerId && entryPlayerId && selectedTarget.primaryPlayerId === entryPlayerId);
+}
+
+function handleManualTargetSelectionFromEntry(entry = {}, sourceLabel = "랭킹 표") {
+  setSelectedManualTarget({
+    uid: entry.uid,
+    playerId: entry.playerId,
+    primaryPlayerId: entry.playerId,
+    playerIds: [entry.playerId],
+    nickname: entry.name || entry.nickname,
+    lastSeenAt: entry.lastSeen,
+    isOnline: Boolean(entry.lastSeen),
+    sourceLabel
+  });
+  renderRankings(adminState.rankings);
+  setInlineStatus(elements.playerActionStatus, `${formatText(entry.name || entry.nickname, "플레이어")} 선택됨. 아래 수동 작업에 바로 적용됩니다.`, "success");
+}
+
+function bindManualTargetControls() {
+  elements.playerSelectionClearButton?.addEventListener("click", () => {
+    clearSelectedManualTarget();
+    renderRankings(adminState.rankings);
+    setInlineStatus(elements.playerActionStatus, "선택한 플레이어를 해제했습니다.");
+  });
+
+  [
+    elements.walletAdjustDelta,
+    elements.walletAdjustReason,
+    elements.walletAdjustTitle,
+    elements.walletAdjustBody
+  ].forEach((element) => {
+    element?.addEventListener("input", () => {
+      renderWalletAdjustPreview();
+    });
+  });
+
+  [
+    elements.sendMessageId,
+    elements.sendMessageTitle,
+    elements.sendMessageBody
+  ].forEach((element) => {
+    element?.addEventListener("input", () => {
+      renderSendMessagePreview();
+    });
+  });
+}
+
 async function handleSeasonPayoutAction({ apply }) {
   const season = getSelectedPayoutSeason();
   const playerId = readTrimmedValue(elements.seasonPayoutPlayerId);
@@ -1099,15 +1431,12 @@ async function handleSeasonPayoutAction({ apply }) {
 }
 
 async function handleWalletAdjustAction() {
-  const uid = readTrimmedValue(elements.walletAdjustUid);
+  const uid = getRequiredManualTargetValue();
   const delta = readWholeNumber(elements.walletAdjustDelta, 0);
   const reason = readTrimmedValue(elements.walletAdjustReason);
-  const title = readTrimmedValue(elements.walletAdjustTitle);
-  const body = readTrimmedValue(elements.walletAdjustBody);
-
-  if (!uid) {
-    throw new Error("대상 UID가 필요합니다.");
-  }
+  const draft = buildWalletAdjustDraft(delta, reason);
+  const title = readTrimmedValue(elements.walletAdjustTitle) || draft.title;
+  const body = readTrimmedValue(elements.walletAdjustBody) || draft.body;
 
   if (!delta) {
     throw new Error("증감값은 0일 수 없습니다.");
@@ -1118,9 +1447,8 @@ async function handleWalletAdjustAction() {
   }
 
   setInlineStatus(elements.playerActionStatus, "후쥬 잔액을 조정하는 중...");
-  setResultBox(elements.playerActionResult, "처리 중...");
 
-  const result = await runAdminActionRequest("adjust-wallet", {
+  await runAdminActionRequest("adjust-wallet", {
     uid,
     delta,
     reason,
@@ -1132,27 +1460,21 @@ async function handleWalletAdjustAction() {
   });
 
   setInlineStatus(elements.playerActionStatus, `${uid} 후쥬 잔액 조정 완료.`, "success");
-  setResultBox(elements.playerActionResult, result);
 }
 
 async function handleSendMessageAction() {
-  const uid = readTrimmedValue(elements.sendMessageUid);
+  const uid = getRequiredManualTargetValue();
   const messageId = readTrimmedValue(elements.sendMessageId);
   const title = readTrimmedValue(elements.sendMessageTitle);
   const body = readTrimmedValue(elements.sendMessageBody);
-
-  if (!uid) {
-    throw new Error("대상 UID가 필요합니다.");
-  }
 
   if (!title || !body) {
     throw new Error("제목과 본문을 입력해주세요.");
   }
 
   setInlineStatus(elements.playerActionStatus, "메시지를 보내는 중...");
-  setResultBox(elements.playerActionResult, "처리 중...");
 
-  const result = await runAdminActionRequest("send-message", {
+  await runAdminActionRequest("send-message", {
     uid,
     messageId,
     title,
@@ -1164,32 +1486,25 @@ async function handleSendMessageAction() {
   });
 
   setInlineStatus(elements.playerActionStatus, `${uid}에게 메시지 전송 완료.`, "success");
-  setResultBox(elements.playerActionResult, result);
 }
 
 async function handleDeleteMessageAction() {
-  const uid = readTrimmedValue(elements.deleteMessageUid);
+  const uid = getRequiredManualTargetValue();
   const messageId = readTrimmedValue(elements.deleteMessageId);
-
-  if (!uid) {
-    throw new Error("대상 UID가 필요합니다.");
-  }
 
   if (!messageId) {
     throw new Error("메시지 ID가 필요합니다.");
   }
 
   setInlineStatus(elements.playerActionStatus, "메시지를 삭제하는 중...");
-  setResultBox(elements.playerActionResult, "처리 중...");
 
-  const result = await runAdminActionRequest("delete-message", {
+  await runAdminActionRequest("delete-message", {
     uid,
     messageId,
     apply: true
   });
 
   setInlineStatus(elements.playerActionStatus, `${uid}의 메시지 ${messageId} 삭제 완료.`, "success");
-  setResultBox(elements.playerActionResult, result);
 }
 
 function bindAdminOperationControls() {
@@ -1224,7 +1539,6 @@ function bindAdminOperationControls() {
     } catch (error) {
       console.error(error);
       setInlineStatus(elements.playerActionStatus, formatText(error?.message, "후쥬 잔액 조정에 실패했습니다."), "error");
-      setResultBox(elements.playerActionResult, formatText(error?.message, "후쥬 잔액 조정에 실패했습니다."));
     }
   });
 
@@ -1234,12 +1548,11 @@ function bindAdminOperationControls() {
     } catch (error) {
       console.error(error);
       setInlineStatus(elements.playerActionStatus, formatText(error?.message, "메시지 전송에 실패했습니다."), "error");
-      setResultBox(elements.playerActionResult, formatText(error?.message, "메시지 전송에 실패했습니다."));
     }
   });
 
   elements.deleteMessageApplyButton?.addEventListener("click", async () => {
-    const uid = readTrimmedValue(elements.deleteMessageUid);
+    const uid = getManualTargetValue(adminState.selectedManualTarget || {});
     const messageId = readTrimmedValue(elements.deleteMessageId);
     if (!window.confirm(`${uid || "(비어 있음)"} 계정의 메시지 ${messageId || "(비어 있음)"}를 삭제할까요?`)) {
       return;
@@ -1250,7 +1563,6 @@ function bindAdminOperationControls() {
     } catch (error) {
       console.error(error);
       setInlineStatus(elements.playerActionStatus, formatText(error?.message, "메시지 삭제에 실패했습니다."), "error");
-      setResultBox(elements.playerActionResult, formatText(error?.message, "메시지 삭제에 실패했습니다."));
     }
   });
 }
@@ -1313,10 +1625,18 @@ async function bootstrapAdminDashboard() {
   }
 
   ensurePlayerModal();
+  renderSelectedManualTarget();
+  renderManualMessagePreviews();
   setupChartTooltip();
   bindPlayerLookupTriggers();
+  bindManualTargetControls();
   populateSeasonSelect();
   bindAdminOperationControls();
+  window.addEventListener("resize", () => {
+    if (adminState.trendDailyStats.length) {
+      renderTrendChart(adminState.trendDailyStats);
+    }
+  });
 
   elements.refreshButton.addEventListener("click", () => {
     void refreshAdminData();

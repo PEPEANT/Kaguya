@@ -18,7 +18,7 @@
         </div>
         <div class="admin-header-actions">
           <p class="admin-updated">갱신: <span id="lastUpdated">-</span></p>
-          <a href="./payouts.html" class="refresh-button refresh-button--secondary">지급 완료 내역</a>
+          <a href="./payouts.html" class="refresh-button refresh-button--secondary">지급 센터</a>
           <button id="refreshButton" type="button" class="refresh-button">새로고침</button>
         </div>
       </header>
@@ -64,104 +64,123 @@
         <section class="panel-card admin-ops-card">
           <div class="panel-head">
             <h2>시즌 보상 지급</h2>
-            <p>랭킹 기준으로 보상을 미리보기하고 실제 지급할 수 있습니다.</p>
+            <p>지급 대상 표, 수동 uid 보정, 지급 완료 내역을 전용 페이지에서 한 번에 처리합니다.</p>
           </div>
-          <form id="seasonPayoutForm" class="admin-form-grid">
-            <label class="admin-field">
-              <span>시즌</span>
-              <select id="seasonPayoutSeason"></select>
-            </label>
-            <label class="admin-field">
-              <span>대상 수</span>
-              <input id="seasonPayoutLimit" type="number" min="0" step="1" placeholder="0이면 전체">
-            </label>
-            <label class="admin-field admin-field--wide">
-              <span>플레이어 ID 필터</span>
-              <input id="seasonPayoutPlayerId" type="text" placeholder="선택한 playerId 1명만">
-            </label>
-            <label class="admin-field admin-field--wide">
-              <span>강제 대상 UID</span>
-              <input id="seasonPayoutTargetUid" type="text" placeholder="playerId 1명에 대해 uid 수동 지정">
-            </label>
-            <div class="admin-button-row admin-field--wide">
-              <button id="seasonPayoutPreviewButton" type="button" class="refresh-button refresh-button--secondary">미리보기</button>
-              <button id="seasonPayoutApplyButton" type="button" class="refresh-button">실제 지급</button>
+          <div class="player-detail-empty">
+            <strong>이제 입력창 대신 지급 대상 리스트를 보고 바로 선택 지급할 수 있습니다.</strong>
+            <p>시즌별 보상 대상, 이미 지급된 행, uid가 비어 있는 행을 한 화면에서 확인하고 필요한 줄만 골라 처리하세요.</p>
+            <div class="admin-button-row">
+              <a href="./payouts.html" class="refresh-button">지급 센터 열기</a>
             </div>
-          </form>
-          <p id="seasonPayoutStatus" class="admin-inline-status">준비됨.</p>
-          <pre id="seasonPayoutResult" class="admin-result-box">아직 보상 미리보기를 실행하지 않았습니다.</pre>
+          </div>
         </section>
 
         <section class="panel-card admin-ops-card">
           <div class="panel-head">
             <h2>플레이어 수동 작업</h2>
-            <p>메시지 발송, HujuPay 조정, 메시지 삭제를 직접 처리합니다.</p>
+            <p>랭킹 표에서 플레이어를 고르면 바로 아래 작업에 적용됩니다.</p>
           </div>
           <div class="admin-ops-stack">
-            <form id="walletAdjustForm" class="admin-form-grid admin-form-grid--compact">
-              <label class="admin-field">
-                <span>대상 UID 또는 playerId</span>
-                <input id="walletAdjustUid" type="text" placeholder="uid 또는 playerId">
-              </label>
-              <label class="admin-field">
-                <span>증감값</span>
-                <input id="walletAdjustDelta" type="number" step="1" placeholder="500 또는 -300">
-              </label>
-              <label class="admin-field admin-field--wide">
-                <span>사유</span>
-                <input id="walletAdjustReason" type="text" placeholder="필수 사유">
-              </label>
-              <label class="admin-field admin-field--wide">
-                <span>메시지 제목</span>
-                <input id="walletAdjustTitle" type="text" placeholder="후쥬페이 변동 안내">
-              </label>
-              <label class="admin-field admin-field--wide">
-                <span>메시지 본문</span>
-                <textarea id="walletAdjustBody" rows="3" placeholder="관리자가 500 HujuPay를 지급했습니다..."></textarea>
-              </label>
-              <div class="admin-button-row admin-field--wide">
-                <button id="walletAdjustApplyButton" type="button" class="refresh-button">후쥬 증감 적용</button>
+            <div class="player-selection-summary-wrap">
+              <div id="selectedPlayerSummary" class="player-selection-summary player-selection-summary--empty">
+                선택된 플레이어 없음
               </div>
-            </form>
+              <div class="admin-button-row">
+                <button id="playerSelectionClearButton" type="button" class="refresh-button refresh-button--secondary">선택 해제</button>
+              </div>
+            </div>
 
-            <form id="sendMessageForm" class="admin-form-grid admin-form-grid--compact">
-              <label class="admin-field">
-                <span>대상 UID 또는 playerId</span>
-                <input id="sendMessageUid" type="text" placeholder="uid 또는 playerId">
-              </label>
-              <label class="admin-field">
-                <span>메시지 ID</span>
-                <input id="sendMessageId" type="text" placeholder="비워두면 자동 생성">
-              </label>
-              <label class="admin-field admin-field--wide">
-                <span>제목</span>
-                <input id="sendMessageTitle" type="text" placeholder="공지 제목">
-              </label>
-              <label class="admin-field admin-field--wide">
-                <span>본문</span>
-                <textarea id="sendMessageBody" rows="3" placeholder="공지 내용"></textarea>
-              </label>
-              <div class="admin-button-row admin-field--wide">
-                <button id="sendMessageApplyButton" type="button" class="refresh-button refresh-button--secondary">메시지 보내기</button>
+            <section class="admin-action-card">
+              <div class="admin-action-head">
+                <h3>후쥬 지급/차감</h3>
+                <p>금액과 사유를 넣으면 아래 미리보기 그대로 안내 메시지가 함께 발송됩니다. 제목과 본문은 필요할 때만 수정하세요.</p>
               </div>
-            </form>
+              <form id="walletAdjustForm" class="admin-form-grid admin-form-grid--compact">
+                <label class="admin-field">
+                  <span>증감값</span>
+                  <input id="walletAdjustDelta" type="number" step="1" placeholder="500 또는 -300">
+                </label>
+                <label class="admin-field">
+                  <span>사유</span>
+                  <input id="walletAdjustReason" type="text" placeholder="필수 사유">
+                </label>
+                <label class="admin-field admin-field--wide">
+                  <span>실제 발송 제목</span>
+                  <input id="walletAdjustTitle" type="text" placeholder="비워두면 기본 제목 사용">
+                </label>
+                <label class="admin-field admin-field--wide">
+                  <span>실제 발송 본문</span>
+                  <textarea id="walletAdjustBody" rows="3" placeholder="비워두면 금액과 사유를 반영한 기본 문구를 사용합니다."></textarea>
+                </label>
+                <div class="admin-button-row admin-field--wide">
+                  <button id="walletAdjustApplyButton" type="button" class="refresh-button">후쥬 증감 적용</button>
+                </div>
+              </form>
+              <div class="message-preview-card">
+                <p class="message-preview-label">실제 발송 미리보기</p>
+                <p id="walletAdjustPreviewMeta" class="message-preview-meta">플레이어를 선택하고 금액을 입력하면 여기서 실제 발송 내용을 확인할 수 있습니다.</p>
+                <div class="message-preview-frame">
+                  <strong id="walletAdjustPreviewTitle" class="message-preview-title">후쥬페이 변동 안내</strong>
+                  <p id="walletAdjustPreviewBody" class="message-preview-body">관리자가 후쥬 변동 안내 메시지를 보냅니다.</p>
+                </div>
+              </div>
+            </section>
 
-            <form id="deleteMessageForm" class="admin-form-grid admin-form-grid--compact">
-              <label class="admin-field">
-                <span>대상 UID 또는 playerId</span>
-                <input id="deleteMessageUid" type="text" placeholder="uid 또는 playerId">
-              </label>
-              <label class="admin-field">
-                <span>메시지 ID</span>
-                <input id="deleteMessageId" type="text" placeholder="삭제할 message id">
-              </label>
-              <div class="admin-button-row admin-field--wide">
-                <button id="deleteMessageApplyButton" type="button" class="refresh-button refresh-button--danger">메시지 삭제</button>
+            <section class="admin-action-card">
+              <div class="admin-action-head">
+                <h3>공지 메시지 보내기</h3>
+                <p>아래에 적은 제목과 본문이 그대로 발송됩니다. 메시지 ID는 기본적으로 자동 생성됩니다.</p>
               </div>
-            </form>
+              <form id="sendMessageForm" class="admin-form-grid admin-form-grid--compact">
+                <label class="admin-field admin-field--wide">
+                  <span>실제 발송 제목</span>
+                  <input id="sendMessageTitle" type="text" placeholder="공지 제목">
+                </label>
+                <label class="admin-field admin-field--wide">
+                  <span>실제 발송 본문</span>
+                  <textarea id="sendMessageBody" rows="3" placeholder="공지 내용"></textarea>
+                </label>
+                <details class="admin-advanced admin-field--wide">
+                  <summary>고급 설정</summary>
+                  <div class="admin-form-grid admin-form-grid--single">
+                    <label class="admin-field">
+                      <span>메시지 ID</span>
+                      <input id="sendMessageId" type="text" placeholder="비워두면 자동 생성">
+                    </label>
+                  </div>
+                  <p class="admin-inline-status">메시지 ID는 내부 식별용입니다. 특별한 이유가 없으면 비워두세요.</p>
+                </details>
+                <div class="admin-button-row admin-field--wide">
+                  <button id="sendMessageApplyButton" type="button" class="refresh-button refresh-button--secondary">메시지 보내기</button>
+                </div>
+              </form>
+              <div class="message-preview-card">
+                <p class="message-preview-label">실제 발송 미리보기</p>
+                <p id="sendMessagePreviewMeta" class="message-preview-meta">플레이어를 선택하고 제목과 본문을 적으면 실제 발송 모습이 바로 보입니다.</p>
+                <div class="message-preview-frame">
+                  <strong id="sendMessagePreviewTitle" class="message-preview-title">제목을 입력해주세요</strong>
+                  <p id="sendMessagePreviewBody" class="message-preview-body">본문을 입력하면 여기서 실제 발송 내용을 확인할 수 있습니다.</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="admin-action-card">
+              <div class="admin-action-head">
+                <h3>메시지 삭제</h3>
+                <p>이미 보낸 메시지를 지울 때만 사용합니다. 삭제할 메시지의 ID를 정확히 입력해주세요.</p>
+              </div>
+              <form id="deleteMessageForm" class="admin-form-grid admin-form-grid--compact">
+                <label class="admin-field">
+                  <span>삭제할 메시지 ID</span>
+                  <input id="deleteMessageId" type="text" placeholder="예: admin_message_20260404_120000">
+                </label>
+                <div class="admin-button-row admin-field--wide">
+                  <button id="deleteMessageApplyButton" type="button" class="refresh-button refresh-button--danger">메시지 삭제</button>
+                </div>
+              </form>
+            </section>
           </div>
-          <p id="playerActionStatus" class="admin-inline-status">준비됨.</p>
-          <pre id="playerActionResult" class="admin-result-box">아직 수동 작업을 실행하지 않았습니다.</pre>
+          <p id="playerActionStatus" class="admin-inline-status"></p>
         </section>
       </section>
 
@@ -198,6 +217,7 @@
                   <th>닉네임</th>
                   <th>점수</th>
                   <th>기록 시간</th>
+                  <th>작업</th>
                 </tr>
               </thead>
               <tbody id="rankingTableBody"></tbody>

@@ -292,8 +292,8 @@ function buildMessagePayload({
   return {
     messageId,
     type: normalizeText(type) || "admin_notice",
-    title: normalizeText(title) || "Admin message",
-    body: normalizeText(body) || "A manual admin update was sent to your account.",
+    title: normalizeText(title) || "관리자 메시지",
+    body: normalizeText(body) || "관리자가 계정에 안내 메시지를 보냈습니다.",
     season: normalizeSeason(season, 1),
     seasonLabel: normalizeText(seasonLabel),
     rank: normalizeRank(rank) ?? 0,
@@ -303,6 +303,21 @@ function buildMessagePayload({
     claimed: Boolean(claimed),
     sentAt,
     claimedAt: claimed ? sentAt : ""
+  };
+}
+
+function buildWalletAdjustmentNotice(delta, reason = "") {
+  const safeDelta = normalizeInt(delta, 0);
+  const absoluteDelta = Math.abs(safeDelta).toLocaleString("ko-KR");
+  const actionLabel = safeDelta > 0 ? "지급" : "차감";
+  const safeReason = normalizeText(reason);
+
+  return {
+    title: "후쥬페이 변동 안내",
+    body: [
+      `관리자가 ${absoluteDelta} HujuPay를 ${actionLabel}했습니다.`,
+      safeReason ? `사유: ${safeReason}` : ""
+    ].filter(Boolean).join("\n")
   };
 }
 
@@ -442,15 +457,14 @@ export async function runAdjustWallet(options) {
     throw new Error(`Message ${messageId} already exists for ${uid}.`);
   }
 
-  const direction = delta > 0 ? "added" : "deducted";
-  const absoluteDelta = Math.abs(delta).toLocaleString("ko-KR");
+  const noticeDraft = buildWalletAdjustmentNotice(delta, options.reason);
   const messagePayload = options.skipMessage ? null : buildMessagePayload({
     messageId,
     type: delta > 0 ? "admin_wallet_credit" : "admin_wallet_debit",
-    title: options.title || "HujuPay updated",
-    body: options.body || `Admin ${direction} ${absoluteDelta} HujuPay. Reason: ${normalizeText(options.reason)}`,
+    title: options.title || noticeDraft.title,
+    body: options.body || noticeDraft.body,
     season: options.season,
-    seasonLabel: options.seasonLabel || "Admin",
+    seasonLabel: options.seasonLabel || "관리자",
     rewardAmount: delta > 0 ? delta : 0,
     rewardCurrency: delta > 0 ? "hujupay" : "notice",
     claimable: false,
