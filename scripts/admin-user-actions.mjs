@@ -408,12 +408,18 @@ export async function runSendMessage(options) {
   }
 
   summary.completedAt = new Date().toISOString();
-  summary.summaryFile = await writeSummaryFile("admin-send-message", summary);
+  if (options.persistSummary !== false) {
+    summary.summaryFile = await writeSummaryFile("admin-send-message", summary);
+  } else {
+    summary.summaryFile = "";
+  }
 
   console.log(options.apply
     ? `Message ${messageId} sent to ${uid}.`
     : `[dry-run] Message ${messageId} is ready for ${uid}.`);
-  console.log(`Summary written to ${summary.summaryFile}`);
+  if (summary.summaryFile) {
+    console.log(`Summary written to ${summary.summaryFile}`);
+  }
   return summary;
 }
 
@@ -515,12 +521,18 @@ export async function runAdjustWallet(options) {
   }
 
   summary.completedAt = new Date().toISOString();
-  summary.summaryFile = await writeSummaryFile("admin-adjust-wallet", summary);
+  if (options.persistSummary !== false) {
+    summary.summaryFile = await writeSummaryFile("admin-adjust-wallet", summary);
+  } else {
+    summary.summaryFile = "";
+  }
 
   console.log(options.apply
     ? `Wallet for ${uid} adjusted by ${delta}. New balance: ${nextBalance}.`
     : `[dry-run] Wallet for ${uid} would change by ${delta}. New balance: ${nextBalance}.`);
-  console.log(`Summary written to ${summary.summaryFile}`);
+  if (summary.summaryFile) {
+    console.log(`Summary written to ${summary.summaryFile}`);
+  }
   return summary;
 }
 
@@ -552,9 +564,15 @@ export async function runDeleteMessage(options) {
 
   if (!messageDoc.exists) {
     summary.completedAt = new Date().toISOString();
-    summary.summaryFile = await writeSummaryFile("admin-delete-message", summary);
+    if (options.persistSummary !== false) {
+      summary.summaryFile = await writeSummaryFile("admin-delete-message", summary);
+    } else {
+      summary.summaryFile = "";
+    }
     console.log(`Message ${messageId} does not exist for ${uid}.`);
-    console.log(`Summary written to ${summary.summaryFile}`);
+    if (summary.summaryFile) {
+      console.log(`Summary written to ${summary.summaryFile}`);
+    }
     return summary;
   }
 
@@ -574,17 +592,25 @@ export async function runDeleteMessage(options) {
   }
 
   summary.completedAt = new Date().toISOString();
-  summary.summaryFile = await writeSummaryFile("admin-delete-message", summary);
+  if (options.persistSummary !== false) {
+    summary.summaryFile = await writeSummaryFile("admin-delete-message", summary);
+  } else {
+    summary.summaryFile = "";
+  }
 
   console.log(options.apply
     ? `Message ${messageId} deleted for ${uid}.`
     : `[dry-run] Message ${messageId} would be deleted for ${uid}.`);
-  console.log(`Summary written to ${summary.summaryFile}`);
+  if (summary.summaryFile) {
+    console.log(`Summary written to ${summary.summaryFile}`);
+  }
   return summary;
 }
 
 export async function runAdminUserAction(command, options = {}) {
-  refreshFirebaseTokenCache();
+  if (options.refreshTokenCache !== false) {
+    refreshFirebaseTokenCache();
+  }
 
   switch (command) {
     case "send-message":

@@ -555,6 +555,9 @@ export async function runSeasonPayout(rawOptions = {}) {
   const persistSummary = typeof rawOptions.persistSummary === "boolean"
     ? rawOptions.persistSummary
     : (Boolean(rawOptions.apply) || !Boolean(rawOptions.quiet));
+  const refreshTokenCache = typeof rawOptions.refreshTokenCache === "boolean"
+    ? rawOptions.refreshTokenCache
+    : !Boolean(rawOptions.quiet);
 
   const options = {
     season: Math.max(1, Math.floor(Number(rawOptions.season) || 1)),
@@ -574,6 +577,7 @@ export async function runSeasonPayout(rawOptions = {}) {
       DEFAULT_REWARD_MESSAGE_BODY_TEMPLATE
     ),
     persistSummary,
+    refreshTokenCache,
     quiet: Boolean(rawOptions.quiet)
   };
   if (options.targetUid && !options.playerId) {
@@ -591,7 +595,9 @@ export async function runSeasonPayout(rawOptions = {}) {
     }
   };
 
-  refreshFirebaseTokenCache();
+  if (options.refreshTokenCache) {
+    refreshFirebaseTokenCache();
+  }
 
   const season = options.season;
   const seasonLabel = options.seasonLabel || getDefaultSeasonLabel(season);

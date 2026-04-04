@@ -1,0 +1,11 @@
+{
+  "liveServer.settings.ignoreFiles": [
+    "**/.git/**",
+    "**/data/**",
+    "**/firebase-debug.log",
+    "**/tmp-app-stdout.log",
+    "**/tmp-app-stderr.log",
+    "**/.playwright-mcp/**",
+    "**/processed-assets/**"
+  ]
+}

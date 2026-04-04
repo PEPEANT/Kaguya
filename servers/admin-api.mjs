@@ -148,6 +148,8 @@ function sanitizePayoutOptions(payload = {}) {
     targetUidByPlayerId,
     messageTitleTemplate: String(payload.messageTitleTemplate || "").trim(),
     messageBodyTemplate: String(payload.messageBodyTemplate || "").trim(),
+    persistSummary: false,
+    refreshTokenCache: false,
     quiet: true
   };
 }
@@ -169,7 +171,9 @@ function sanitizeUserActionOptions(payload = {}, actor = "") {
     claimed: payload.claimed !== false,
     delta: Math.floor(Number(payload.delta) || 0),
     reason: String(payload.reason || "").trim(),
-    skipMessage: Boolean(payload.skipMessage)
+    skipMessage: Boolean(payload.skipMessage),
+    persistSummary: false,
+    refreshTokenCache: false
   };
 }
 
