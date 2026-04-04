@@ -91,6 +91,9 @@ export async function startAppServer({
   const server = createServer((request, response) => {
     const requestUrl = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
     const { pathname } = requestUrl;
+    const publicPathname = pathname.startsWith("/public/")
+      ? pathname.slice("/public".length)
+      : pathname;
 
     const handle = async () => {
       if (["GET", "HEAD"].includes(request.method || "GET") && shouldRedirectLoopbackHost(requestUrl)) {
@@ -163,7 +166,7 @@ export async function startAppServer({
       }
 
       if (request.method === "GET") {
-        const publicFile = await resolvePublicFile(PUBLIC_DIR, pathname);
+        const publicFile = await resolvePublicFile(PUBLIC_DIR, publicPathname);
 
         if (publicFile) {
           await sendFile(response, publicFile);

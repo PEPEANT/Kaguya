@@ -253,16 +253,27 @@ function clearSelectedManualTarget() {
 }
 
 async function runAdminActionRequest(action, payload) {
-  const idToken = await getCurrentAuthIdToken();
+  let idToken = "";
+  try {
+    idToken = await getCurrentAuthIdToken();
+  } catch (error) {
+    if (!canUseLocalAdminBypass()) {
+      throw error;
+    }
+  }
   let response;
 
   try {
+    const headers = {
+      "Content-Type": "application/json"
+    };
+    if (idToken) {
+      headers.Authorization = `Bearer ${idToken}`;
+    }
+
     response = await fetch(getAdminApiUrl(), {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${idToken}`
-      },
+      headers,
       body: JSON.stringify({ action, payload })
     });
   } catch {
@@ -310,6 +321,10 @@ function normalizeName(name) {
 
 function canBypassAdminAllowlist() {
   return ["localhost", "127.0.0.1"].includes(window.location.hostname);
+}
+
+function canUseLocalAdminBypass() {
+  return canBypassAdminAllowlist() && !adminAccessConfig.allowedEmails.length;
 }
 
 function isAuthorizedAdmin(user) {
@@ -491,6 +506,10 @@ function renderAccessGate({ title, body }) {
 }
 
 async function requireAuthorizedAdmin() {
+  if (canUseLocalAdminBypass()) {
+    return null;
+  }
+
   if (!adminAccessConfig.requiresSignIn && !adminAccessConfig.allowedEmails.length) {
     return null;
   }

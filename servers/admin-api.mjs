@@ -98,16 +98,24 @@ async function lookupFirebaseUserByIdToken(idToken) {
 }
 
 async function requireAuthorizedAdmin(request, requestUrl) {
+  const allowedEmails = getAdminAllowedEmails();
   const header = String(request.headers.authorization || "").trim();
   const tokenMatch = header.match(/^Bearer\s+(.+)$/iu);
   if (!tokenMatch) {
+    if (!allowedEmails.length && isLocalHost(requestUrl.hostname)) {
+      return {
+        uid: "local-dev-admin",
+        email: "local-dev@localhost",
+        displayName: "Local Dev Admin"
+      };
+    }
+
     const error = new Error("Admin authentication is required.");
     error.statusCode = 401;
     throw error;
   }
 
   const user = await lookupFirebaseUserByIdToken(tokenMatch[1]);
-  const allowedEmails = getAdminAllowedEmails();
 
   if (allowedEmails.length) {
     if (!allowedEmails.includes(user.email)) {
