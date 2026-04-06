@@ -2,7 +2,13 @@ import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getRankingCorsOrigin, getRankingPort, normalizeRankingSeason } from "./shared/config.mjs";
+import {
+  getRankingCorsOrigin,
+  getRankingPort,
+  normalizeRankingSeason,
+  RANKING_CLOSURE_NOTICE,
+  RANKING_OPERATIONS_CLOSED
+} from "./shared/config.mjs";
 import { sendJson, sendText } from "./shared/http.mjs";
 import { ensureRankingStorage, isNicknameAvailable, readAllRankings, readRankings, submitRanking } from "./shared/rankings-store.mjs";
 
@@ -103,6 +109,14 @@ export async function startRankingServer({
       }
 
       if (pathname === "/api/rankings" && request.method === "POST") {
+        if (RANKING_OPERATIONS_CLOSED) {
+          sendJson(response, 403, {
+            error: "Ranking submissions are closed.",
+            notice: RANKING_CLOSURE_NOTICE
+          });
+          return;
+        }
+
         const payload = await readJsonBody(request);
         sendJson(response, 200, await submitRanking({
           ...payload,

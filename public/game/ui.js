@@ -771,7 +771,10 @@ export function setActiveSeasonTab(season) {
   elements.seasonTab2.classList.toggle("season-tab--active", season === 2);
 }
 
-function appendSeasonArchiveBanner(periodText = t("ranking.season1ArchivePeriod")) {
+function appendSeasonArchiveBanner({
+  titleText = t("ranking.season1ArchiveTitle"),
+  periodText = t("ranking.season1ArchivePeriod")
+} = {}) {
   const wrapper = document.createElement("li");
   wrapper.className = "season-archive";
 
@@ -784,7 +787,7 @@ function appendSeasonArchiveBanner(periodText = t("ranking.season1ArchivePeriod"
 
   const title = document.createElement("span");
   title.className = "season-archive-title";
-  title.textContent = t("ranking.season1ArchiveTitle");
+  title.textContent = titleText;
 
   left.append(trophy, title);
 
@@ -804,16 +807,27 @@ export function closeAllRankingsModal() {
 export function renderSeason1Archive(rankings = [], period = t("ranking.season1ArchivePeriod")) {
   renderAllRankingsList(rankings, {
     archived: true,
+    archivedTitle: t("ranking.season1ArchiveTitle"),
     period
   });
 }
 
-export function renderAllRankingsList(rankings, { archived = false, period = t("ranking.season1ArchivePeriod") } = {}) {
+export function renderAllRankingsList(
+  rankings,
+  {
+    archived = false,
+    archivedTitle = t("ranking.season1ArchiveTitle"),
+    period = t("ranking.season1ArchivePeriod")
+  } = {}
+) {
   elements.allRankingsList.innerHTML = "";
   elements.allRankingsStatus.hidden = true;
 
   if (archived) {
-    appendSeasonArchiveBanner(period);
+    appendSeasonArchiveBanner({
+      titleText: archivedTitle,
+      periodText: period
+    });
   }
 
   if (!rankings.length) {

@@ -49,6 +49,7 @@
           </div>
 
           <p id="introAuthState" class="intro-auth-state" hidden></p>
+          <p id="serviceNotice" class="service-notice" hidden></p>
         </div>
       </section>
 
@@ -167,7 +168,7 @@
               <div class="section-head-main">
                 <button id="rankingBackButton" type="button" class="panel-back-button" data-i18n="lobby.mobileBack">Back</button>
                 <h2 data-i18n="ranking.title">Live Ranking</h2>
-                <span class="season-badge season-badge--current" data-i18n="ranking.currentSeasonBadge">Season 1</span>
+                <span class="season-badge season-badge--ended" data-i18n="ranking.currentSeasonBadge">Season 1 Ended</span>
               </div>
               <div class="ranking-head-actions">
                 <button id="viewAllRankingsButton" type="button" class="ghost-button ghost-button--small" data-i18n="ranking.viewAll">View All</button>
@@ -454,7 +455,7 @@
         <div class="season-tabs">
           <button id="seasonTab2" class="season-tab season-tab--active" type="button">
             <span data-i18n="ranking.season2Label">Season 1</span>
-            <span class="season-tab-pill season-tab-pill--live" data-i18n="ranking.seasonLive">Live</span>
+            <span class="season-tab-pill season-tab-pill--ended" data-i18n="ranking.seasonEnded">Ended</span>
           </button>
           <button id="seasonTab1" class="season-tab" type="button">
             <span data-i18n="ranking.season1Label">Season 0</span>

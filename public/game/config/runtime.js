@@ -41,6 +41,14 @@ export function getFirebaseRuntimeConfig() {
   return getAppConfig().firebase || null;
 }
 
+export function isRankingClosed() {
+  return getAppConfig().rankingClosed === true;
+}
+
+export function getRankingClosureNotice() {
+  return String(getAppConfig().rankingClosureNotice || "").trim();
+}
+
 export function getCurrentRankingSeason() {
   return normalizeSeasonNumber(getAppConfig().rankingSeasons?.currentSeason) || 1;
 }

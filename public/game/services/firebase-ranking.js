@@ -12,7 +12,13 @@ import {
   where
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
-import { getCurrentRankingSeason, getFirebaseRuntimeConfig, getRankingSeasonCollection } from "../config/runtime.js";
+import {
+  getCurrentRankingSeason,
+  getFirebaseRuntimeConfig,
+  getRankingClosureNotice,
+  getRankingSeasonCollection,
+  isRankingClosed
+} from "../config/runtime.js";
 
 const MAX_RANKINGS = 10;
 
@@ -238,6 +244,10 @@ export async function checkNicknameAvailability({ season = getCurrentRankingSeas
 
 export async function submitScore({ season = getCurrentRankingSeason(), playerId, uid = "", name, score }) {
   ensureFirebaseReady();
+
+  if (isRankingClosed()) {
+    throw new Error(getRankingClosureNotice() || "Ranking submissions are closed.");
+  }
 
   const safeSeason = resolveSeason(season);
   const safePlayerId = normalizePlayerId(playerId);

@@ -3,7 +3,17 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { handleAdminApiRequest } from "./admin-api.mjs";
-import { getAppPort, getRankingApiBaseUrl, PROCESSED_ASSETS_DIR, PUBLIC_DIR, ROOT_DIR } from "./shared/config.mjs";
+import {
+  getAppPort,
+  getRankingApiBaseUrl,
+  PROCESSED_ASSETS_DIR,
+  PUBLIC_DIR,
+  RANKING_CLOSURE_NOTICE,
+  RANKING_CURRENT_SEASON_ID,
+  RANKING_CURRENT_SEASON_PERIOD,
+  RANKING_OPERATIONS_CLOSED,
+  ROOT_DIR
+} from "./shared/config.mjs";
 import { resolveAssetFile, resolvePublicFile } from "./shared/assets.mjs";
 import { sendFile, sendJavaScript, sendJson, sendText } from "./shared/http.mjs";
 
@@ -29,15 +39,17 @@ function buildAppConfigScript(rankingApiBaseUrl) {
     adminApiBaseUrl: "",
     assetBaseUrl: "",
     processedAssetBaseUrl: "/processed-assets",
+    rankingClosed: RANKING_OPERATIONS_CLOSED,
+    rankingClosureNotice: RANKING_CLOSURE_NOTICE,
     rankingSeasons: {
-      currentSeason: 2,
+      currentSeason: RANKING_CURRENT_SEASON_ID,
       seasons: [
         {
           id: 2,
           kind: "season",
           displayName: "시즌 1",
-          status: "current",
-          period: "2026.04.01 ~ 2026.05.01",
+          status: "archived",
+          period: RANKING_CURRENT_SEASON_PERIOD,
           firebaseCollection: "rankings_season2"
         },
         {

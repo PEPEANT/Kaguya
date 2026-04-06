@@ -21,7 +21,14 @@ import { initAuth, sendPasswordResetLink, signInWithEmail, signOutCurrentUser, s
 import { sendLobbyChatMessage, subscribeLobbyChat } from "./chat-service.js";
 import { exitLandscapePresentation, isLandscapeTouchViewport, isPortraitTouchViewport, isTouchDevice, requestLandscapePresentation } from "./device.js";
 import { elements } from "./dom.js";
-import { getCurrentContentSeasonId, getCurrentRankingSeason, getRankingSeasonConfig, isPlaytestMode } from "./config/runtime.js";
+import {
+  getCurrentContentSeasonId,
+  getCurrentRankingSeason,
+  getRankingClosureNotice,
+  getRankingSeasonConfig,
+  isPlaytestMode,
+  isRankingClosed
+} from "./config/runtime.js";
 import { getLang, initI18n, t } from "./i18n.js";
 import { applyPlaytestState, fetchRankings, handleMovementKey, spawnPlaytestItemByKey, startRound, triggerSlide, updateGame } from "./logic.js";
 import { buildGuestNickname, clearSavedNickname, getOrCreatePlayerId } from "./player-identity.js";
@@ -88,6 +95,8 @@ const ALL_RANKINGS_PREVIEW_COUNT = 10;
 const AUTH_MIN_PASSWORD_LENGTH = 6;
 const PROFILE_SEASON = 1;
 const CURRENT_SEASON = getCurrentRankingSeason();
+const RANKING_CLOSED = isRankingClosed();
+const RANKING_CLOSURE_NOTICE = getRankingClosureNotice();
 const PLAYTEST_ENABLED = isPlaytestMode();
 const PLAYTEST_MESSAGE_SOURCE = "admin-playtest";
 const PLAYTEST_STATUS_SOURCE = "game-playtest";
@@ -166,6 +175,39 @@ function syncIntroBackground() {
   if (elements.introBackgroundImage.getAttribute("src") !== nextSrc) {
     elements.introBackgroundImage.setAttribute("src", nextSrc);
   }
+}
+
+function isEndedRankingSeason(season) {
+  return getRankingSeasonConfig(season).status !== "current";
+}
+
+function getEndedSeasonTitle(season) {
+  const seasonConfig = getRankingSeasonConfig(season);
+  const label = seasonConfig.displayName || `Season ${season}`;
+
+  switch (getLang()) {
+    case "ja":
+      return `${label} 終了記録`;
+    case "en":
+      return `${label} Ended Rankings`;
+    default:
+      return `${label} 종료 기록`;
+  }
+}
+
+function getAllRankingsTitleForSeason(season) {
+  return isEndedRankingSeason(season)
+    ? getEndedSeasonTitle(season)
+    : (season === PROFILE_SEASON ? t("ranking.previousSeasonTitle") : t("ranking.currentFullTitle"));
+}
+
+function syncServiceNotice() {
+  if (!elements.serviceNotice) {
+    return;
+  }
+
+  elements.serviceNotice.textContent = RANKING_CLOSURE_NOTICE;
+  elements.serviceNotice.hidden = !RANKING_CLOSURE_NOTICE;
 }
 
 function getOrientationGateCopy(mode = "game") {
@@ -324,23 +366,27 @@ function startPlaytestStatusLoop() {
 
 function renderActiveAllRankings() {
   const { season, rankings, expanded } = allRankingsModalState;
-  const shouldShowAll = season === CURRENT_SEASON || expanded;
+  const seasonConfig = getRankingSeasonConfig(season);
+  const seasonEnded = seasonConfig.status !== "current";
+  const shouldShowAll = !seasonEnded || expanded;
   const visibleRankings = shouldShowAll ? rankings : rankings.slice(0, ALL_RANKINGS_PREVIEW_COUNT);
 
   if (elements.allRankingsTitle) {
-    elements.allRankingsTitle.textContent = season === 1
-      ? t("ranking.previousSeasonTitle")
-      : t("ranking.currentFullTitle");
+    elements.allRankingsTitle.textContent = getAllRankingsTitleForSeason(season);
   }
 
-  if (season === 1) {
-    renderSeason1Archive(visibleRankings, getRankingSeasonConfig(1).period || t("ranking.season1ArchivePeriod"));
+  if (seasonEnded) {
+    renderAllRankingsList(visibleRankings, {
+      archived: true,
+      archivedTitle: getEndedSeasonTitle(season),
+      period: seasonConfig.period || t("ranking.season1ArchivePeriod")
+    });
   } else {
     renderAllRankingsList(visibleRankings);
   }
 
   setAllRankingsToggle({
-    visible: season !== CURRENT_SEASON && rankings.length > ALL_RANKINGS_PREVIEW_COUNT,
+    visible: seasonEnded && rankings.length > ALL_RANKINGS_PREVIEW_COUNT,
     expanded
   });
 }
@@ -366,9 +412,7 @@ async function showAllRankingsForSeason(season) {
   elements.allRankingsStatus.textContent = t("ranking.loading");
   elements.allRankingsStatus.hidden = false;
   if (elements.allRankingsTitle) {
-    elements.allRankingsTitle.textContent = season === 1
-      ? t("ranking.previousSeasonTitle")
-      : t("ranking.currentFullTitle");
+    elements.allRankingsTitle.textContent = getAllRankingsTitleForSeason(season);
   }
   setAllRankingsToggle({ visible: false, expanded: false });
 
@@ -376,7 +420,7 @@ async function showAllRankingsForSeason(season) {
     const { rankings } = await fetchAllRankingsFromProvider({ season });
     allRankingsModalState.season = season;
     allRankingsModalState.rankings = rankings;
-    allRankingsModalState.expanded = season === CURRENT_SEASON;
+    allRankingsModalState.expanded = !isEndedRankingSeason(season);
     renderActiveAllRankings();
   } catch {
     setAllRankingsStatus(t("ranking.failed"));
@@ -454,7 +498,7 @@ function refreshRankingsInBackground() {
 }
 
 function startRankingPolling() {
-  if (isPlaytestActive() || rankingPollTimer) {
+  if (isPlaytestActive() || RANKING_CLOSED || rankingPollTimer) {
     return;
   }
 
@@ -1553,7 +1597,7 @@ function collectLinkedPlayerIds(accountIdentity = null) {
 }
 
 async function syncRankingNicknameForSeason({ season, user, nickname, linkedPlayerIds }) {
-  if (!user?.uid || !nickname || !linkedPlayerIds.length) {
+  if (RANKING_CLOSED || !user?.uid || !nickname || !linkedPlayerIds.length) {
     return false;
   }
 
@@ -1588,7 +1632,7 @@ async function syncRankingNicknameForSeason({ season, user, nickname, linkedPlay
 }
 
 async function syncAuthenticatedRankingNicknames({ user = state.authUser, nickname = "" } = {}) {
-  if (isPlaytestActive() || !user?.uid) {
+  if (isPlaytestActive() || RANKING_CLOSED || !user?.uid) {
     return false;
   }
 
@@ -2887,6 +2931,7 @@ export async function boot() {
 
   booted = true;
   initI18n();
+  syncServiceNotice();
   primeIntroBackgroundAssets();
   syncIntroBackground();
   state.playerId = getOrCreatePlayerId();
@@ -2929,6 +2974,7 @@ export async function boot() {
 
   window.addEventListener("langchange", () => {
     syncIntroBackground();
+    syncServiceNotice();
     if (!state.authUser) {
       applyNickname(getGuestNickname());
     }
@@ -2959,7 +3005,7 @@ export async function boot() {
 
     if (state.phase === "ready") {
       setStartButtonState({ label: t("boot.ready.button"), disabled: false });
-      setRankingStatus(state.rankings.length ? t("ranking.best") : t("ranking.empty"));
+      setRankingStatus(RANKING_CLOSED ? RANKING_CLOSURE_NOTICE : (state.rankings.length ? t("ranking.best") : t("ranking.empty")));
       return;
     }
 
@@ -2980,7 +3026,9 @@ export async function boot() {
         renderRankingList(state.rankings);
         setRankingStatus(t("ranking.failed"));
       }
-      startRankingPolling();
+      if (!RANKING_CLOSED) {
+        startRankingPolling();
+      }
     } else {
       state.rankings = [];
       renderRankingList(state.rankings);

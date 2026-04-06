@@ -961,42 +961,57 @@ Object.assign(TRANSLATIONS.en, {
 });
 
 Object.assign(TRANSLATIONS.ko, {
-  "ranking.currentSeasonBadge": "\uC2DC\uC98C 1",
+  "ranking.title": "\uB7AD\uD0B9 \uAE30\uB85D",
+  "ranking.currentSeasonBadge": "\uC2DC\uC98C 1 \uC885\uB8CC",
   "ranking.season1Label": "\uC2DC\uC98C 0",
   "ranking.season2Label": "\uC2DC\uC98C 1",
   "ranking.season1ArchiveTitle": "\uC2DC\uC98C 0 \uAE30\uB85D",
   "ranking.season1ArchivePeriod": "2026.03.31 ~ 2026.04.01",
-  "ranking.currentFullTitle": "\uC2DC\uC98C 1 \uC804\uCCB4 \uC21C\uC704",
+  "ranking.currentFullTitle": "\uC2DC\uC98C 1 \uC885\uB8CC \uAE30\uB85D",
   "ranking.previousSeasonTitle": "\uC2DC\uC98C 0 \uC885\uB8CC \uAE30\uB85D",
+  "profile.currentSeasonRecordTitle": "\uC2DC\uC98C 1 \uB0B4 \uAE30\uB85D",
+  "profile.currentSeasonBody": "\uC885\uB8CC\uB41C \uC2DC\uC98C 1\uC758 \uCD5C\uACE0 \uAE30\uB85D\uC785\uB2C8\uB2E4.",
+  "profile.currentSeasonNoRecord": "\uC2DC\uC98C 1\uC5D0 \uC800\uC7A5\uB41C \uB0B4 \uAE30\uB85D\uC774 \uC544\uC9C1 \uC5C6\uC5B4\uC694.",
   "profile.season1RecordTitle": "\uC2DC\uC98C 0 \uB0B4 \uAE30\uB85D",
   "profile.season1Top10Title": "\uC2DC\uC98C 0 Top 10",
-  "profile.season1Top10Body": "\uC885\uB8CC\uB41C \uC2DC\uC98C 0\uC758 \uCD5C\uC885 Top 10 \uAE30\uB85D\uC785\uB2C8\uB2E4."
+  "profile.season1Top10Body": "\uC885\uB8CC\uB41C \uC2DC\uC98C 0\uC758 \uCD5C\uC885 Top 10 \uAE30\uB85D\uC785\uB2C8\uB2E4.",
+  "result.rankingClosed": "\uC2DC\uC98C 1 \uB7AD\uD0B9 \uC6B4\uC601\uC774 2026.04.06\uC5D0 \uC885\uB8CC\uB418\uC5C8\uC5B4\uC694."
 });
 
 Object.assign(TRANSLATIONS.en, {
-  "ranking.currentSeasonBadge": "Season 1",
+  "ranking.title": "Ranking Records",
+  "ranking.currentSeasonBadge": "Season 1 Ended",
   "ranking.season1Label": "Season 0",
   "ranking.season2Label": "Season 1",
   "ranking.season1ArchiveTitle": "Season 0 Records",
   "ranking.season1ArchivePeriod": "2026.03.31 ~ 2026.04.01",
-  "ranking.currentFullTitle": "Season 1 Full Rankings",
+  "ranking.currentFullTitle": "Season 1 Ended Rankings",
   "ranking.previousSeasonTitle": "Season 0 Ended Rankings",
+  "profile.currentSeasonRecordTitle": "My Season 1 Record",
+  "profile.currentSeasonBody": "This is your best record from the ended Season 1.",
+  "profile.currentSeasonNoRecord": "You do not have a saved record for Season 1 yet.",
   "profile.season1RecordTitle": "My Season 0 Record",
   "profile.season1Top10Title": "Season 0 Top 10",
-  "profile.season1Top10Body": "These are the final Top 10 standings from Season 0."
+  "profile.season1Top10Body": "These are the final Top 10 standings from Season 0.",
+  "result.rankingClosed": "Season 1 ranking operations ended on April 6, 2026."
 });
 
 Object.assign(TRANSLATIONS.ja, {
-  "ranking.currentSeasonBadge": "\u30B7\u30FC\u30BA\u30F31",
+  "ranking.title": "\u30E9\u30F3\u30AD\u30F3\u30B0\u8A18\u9332",
+  "ranking.currentSeasonBadge": "\u30B7\u30FC\u30BA\u30F31 \u7D42\u4E86",
   "ranking.season1Label": "\u30B7\u30FC\u30BA\u30F30",
   "ranking.season2Label": "\u30B7\u30FC\u30BA\u30F31",
   "ranking.season1ArchiveTitle": "\u30B7\u30FC\u30BA\u30F30\u306E\u8A18\u9332",
   "ranking.season1ArchivePeriod": "2026.03.31 ~ 2026.04.01",
-  "ranking.currentFullTitle": "\u30B7\u30FC\u30BA\u30F31\u5168\u4F53\u9806\u4F4D",
+  "ranking.currentFullTitle": "\u30B7\u30FC\u30BA\u30F31 \u7D42\u4E86\u8A18\u9332",
   "ranking.previousSeasonTitle": "\u30B7\u30FC\u30BA\u30F30\u7D42\u4E86\u8A18\u9332",
+  "profile.currentSeasonRecordTitle": "\u30B7\u30FC\u30BA\u30F31\u306E\u81EA\u5206\u306E\u8A18\u9332",
+  "profile.currentSeasonBody": "\u7D42\u4E86\u3057\u305F\u30B7\u30FC\u30BA\u30F31\u306E\u6700\u9AD8\u8A18\u9332\u3067\u3059\u3002",
+  "profile.currentSeasonNoRecord": "\u30B7\u30FC\u30BA\u30F31\u306B\u4FDD\u5B58\u3055\u308C\u305F\u81EA\u5206\u306E\u8A18\u9332\u306F\u307E\u3060\u3042\u308A\u307E\u305B\u3093\u3002",
   "profile.season1RecordTitle": "\u30B7\u30FC\u30BA\u30F30\u306E\u81EA\u5206\u306E\u8A18\u9332",
   "profile.season1Top10Title": "\u30B7\u30FC\u30BA\u30F30 Top 10",
-  "profile.season1Top10Body": "\u7D42\u4E86\u3057\u305F\u30B7\u30FC\u30BA\u30F30\u306E\u6700\u7D42 Top 10 \u8A18\u9332\u3067\u3059\u3002"
+  "profile.season1Top10Body": "\u7D42\u4E86\u3057\u305F\u30B7\u30FC\u30BA\u30F30\u306E\u6700\u7D42 Top 10 \u8A18\u9332\u3067\u3059\u3002",
+  "result.rankingClosed": "\u30B7\u30FC\u30BA\u30F31\u306E\u30E9\u30F3\u30AD\u30F3\u30B0\u904B\u55B6\u306F2026\u5E744\u67086\u65E5\u306B\u7D42\u4E86\u3057\u307E\u3057\u305F\u3002"
 });
 
 Object.assign(TRANSLATIONS.ja, {

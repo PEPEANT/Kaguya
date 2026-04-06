@@ -6,6 +6,7 @@ export const elements = {
   introStartButton: document.getElementById("introStartButton"),
   introAuthActions: document.getElementById("introAuthActions"),
   introAuthState: document.getElementById("introAuthState"),
+  serviceNotice: document.getElementById("serviceNotice"),
   introLoginButton: document.getElementById("introLoginButton"),
   lobbyScreen: document.getElementById("lobbyScreen"),
   gameScreen: document.getElementById("gameScreen"),
