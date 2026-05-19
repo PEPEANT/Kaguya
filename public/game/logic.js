@@ -760,7 +760,7 @@ function applyItemEffect(item) {
 
 function getResultNoticeText() {
   if (isRankingClosed()) {
-    return t("result.rankingClosed");
+    return getRankingClosureNotice() || t("result.rankingClosed");
   }
 
   if (state.lastRank === 1 && state.isNewBest) {

@@ -108,9 +108,9 @@ const MESSAGE_ALERTED_STORAGE_PREFIX = "kaguya_messages_alerted_v1";
 const MAX_STORED_MESSAGE_IDS = 120;
 const INTRO_BACKGROUND_VERSION = "20260402-intro";
 const INTRO_BACKGROUND_BY_LANG = Object.freeze({
-  ko: `/scene/Login_Main_kr.png?v=${INTRO_BACKGROUND_VERSION}`,
-  ja: `/scene/Login_Main_jp.png?v=${INTRO_BACKGROUND_VERSION}`,
-  en: `/scene/Login_Main_jp.png?v=${INTRO_BACKGROUND_VERSION}`
+  ko: `./scene/Login_Main_kr.png?v=${INTRO_BACKGROUND_VERSION}`,
+  ja: `./scene/Login_Main_jp.png?v=${INTRO_BACKGROUND_VERSION}`,
+  en: `./scene/Login_Main_jp.png?v=${INTRO_BACKGROUND_VERSION}`
 });
 const allRankingsModalState = {
   season: CURRENT_SEASON,

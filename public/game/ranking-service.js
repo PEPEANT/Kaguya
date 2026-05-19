@@ -1,9 +1,16 @@
 import { getCurrentRankingSeason, getRankingProvider } from "./config/runtime.js";
 
 async function getProvider() {
-  return getRankingProvider() === "firebase"
-    ? import("./services/firebase-ranking.js")
-    : import("./services/rest-ranking.js");
+  const provider = getRankingProvider();
+  if (provider === "firebase") {
+    return import("./services/firebase-ranking.js");
+  }
+
+  if (provider === "static") {
+    return import("./services/static-ranking.js");
+  }
+
+  return import("./services/rest-ranking.js");
 }
 
 function withDefaultSeason(payload = {}) {
