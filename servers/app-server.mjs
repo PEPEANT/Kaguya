@@ -34,7 +34,7 @@ function getCanonicalLoopbackUrl(requestUrl, fallbackPort) {
 
 function buildAppConfigScript(rankingApiBaseUrl) {
   return `window.__APP_CONFIG__ = Object.freeze(${JSON.stringify({
-    rankingProvider: "firebase",
+    rankingProvider: "rest",
     rankingApiBaseUrl,
     adminApiBaseUrl: "",
     assetBaseUrl: "",

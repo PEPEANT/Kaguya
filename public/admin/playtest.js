@@ -81,6 +81,10 @@ function canBypassAdminAllowlist() {
   return ["localhost", "127.0.0.1"].includes(window.location.hostname);
 }
 
+function canUseLocalAdminBypass() {
+  return canBypassAdminAllowlist() && !adminAccessConfig.allowedEmails.length;
+}
+
 function isAuthorizedAdmin(user) {
   if (!adminAccessConfig.requiresSignIn) {
     return true;
@@ -135,6 +139,10 @@ function renderAccessGate({ title, body }) {
 }
 
 async function requireAuthorizedAdmin() {
+  if (canUseLocalAdminBypass()) {
+    return null;
+  }
+
   if (!adminAccessConfig.requiresSignIn && !adminAccessConfig.allowedEmails.length) {
     return null;
   }

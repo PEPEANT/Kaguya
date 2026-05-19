@@ -206,8 +206,9 @@ function syncServiceNotice() {
     return;
   }
 
-  elements.serviceNotice.textContent = RANKING_CLOSURE_NOTICE;
-  elements.serviceNotice.hidden = !RANKING_CLOSURE_NOTICE;
+  const noticeText = RANKING_CLOSED ? RANKING_CLOSURE_NOTICE : "";
+  elements.serviceNotice.textContent = noticeText;
+  elements.serviceNotice.hidden = !noticeText;
 }
 
 function getOrientationGateCopy(mode = "game") {
@@ -2427,15 +2428,17 @@ function bindEvents() {
   elements.introForm.addEventListener("submit", (event) => {
     event.preventDefault();
 
+    if (state.phase === "loading" || state.phase === "submitting" || state.phase === "error") {
+      return;
+    }
+
     elements.introStartButton.disabled = true;
     try {
-      applyNickname(getActiveNickname());
-      showLobbyScreen();
-      updateLobbyPlayerInfo();
+      const nickname = getActiveNickname() || state.nickname || getGuestNickname();
+      applyNickname(nickname);
+      elements.nicknameInput.value = state.nickname;
       ensureMusicEnabled();
-      playLobbyMusic();
-      syncResponsiveUi();
-      void refreshMessagesInbox({ triggerLobbyPrompt: true });
+      queueRoundStart(state.nickname);
     } finally {
       elements.introStartButton.disabled = false;
     }
